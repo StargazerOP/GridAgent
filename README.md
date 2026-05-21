@@ -13,6 +13,29 @@ GridOpsAgent 是一个面向电网智能运维场景的 Multi-Agent 平台。项
 - 安全与治理：包含 RBAC、审批、Hook、审计日志、输入校验、工具结果校验、Resilience4j 重试与熔断。
 - 可观测性：提供健康检查、Trace 查询、Micrometer/Prometheus 指标暴露。
 
+## 项目亮点
+
+GridOpsAgent 不是一个简单的聊天接口包装，而是把电力运维流程拆成多个职责明确的 Agent、工具服务和 Graph 子流程：
+
+- **Multi-Agent 协作**：RouterAgent、ToolAgent、AnalysisAgent、DiagnosisAgent、RiskReviewAgent 分别负责意图路由、工具调用、数据分析、诊断生成和风险复核。
+- **Graph 显式编排**：基于 Spring AI Alibaba Graph 将输入校验、上下文加载、意图识别、子图执行、安全复核、记忆保存串成可观测流程。
+- **Plan-Execute-Replan 诊断闭环**：告警诊断不是一次性问答，而是先规划排查步骤，再调用设备状态、告警历史、日志、工单、台账等工具收集证据，根据证据质量决定继续、重规划或降级。
+- **RAG + ReAct 融合**：知识问答流程同时结合查询改写、混合检索、重排序、工具调用、回答质量评估和引用校验。
+- **MCP 工具隔离**：电力工具能力独立在 `power-tools-mcp-server`，主应用通过 MCP Client 调用，方便未来替换为真实 SCADA、PMS、工单、台账系统。
+- **工程化安全机制**：输入校验、工具结果校验、证据质量评分、高风险审批、Hook、审计日志和 Resilience4j 共同约束 Agent 行为。
+- **知识库构建能力**：支持多格式文档上传、切片、向量化、Milvus 存储、知识组织和版本管理。
+
+## 应用场景
+
+| 场景 | 说明 |
+| --- | --- |
+| 电力安规问答 | 查询作业安全规程、操作要求和现场注意事项。 |
+| 设备状态查询 | 查询变压器、开关柜、断路器等设备的实时状态、台账和运行记录。 |
+| 告警分析 | 对告警事件做原因分析、影响范围判断和后续排查建议。 |
+| 故障诊断 | 结合 RAG、实时数据、日志、工单和风险复核生成结构化诊断报告。 |
+| 知识库管理 | 上传电力文档，构建可检索、可引用、可版本管理的运维知识库。 |
+| 工具治理 | 对工具进行搜索、分类、高风险识别和统一调用。 |
+
 ## 项目结构
 
 ```text
@@ -48,6 +71,124 @@ GridOpsAgent-main/
 | `grid-ops-agent-app` | `9900` | 主应用，负责 Web/API、Agent/Graph 编排、RAG、知识库、审批、审计和可观测性。 |
 
 主应用通过 Spring AI MCP Client 连接 `power-tools-mcp-server`，应用层仍通过统一的 ToolCallback 调用工具，不需要直接感知底层 MCP 细节。
+
+## 系统架构
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ Controller 层                                                │
+│ Chat / Alarm / Knowledge / Approval / Tools / Observability  │
+├─────────────────────────────────────────────────────────────┤
+│ Graph 编排层                                                 │
+│ PowerOpsGraphConfig + StateGraph + 子图分发                  │
+├─────────────────────────────────────────────────────────────┤
+│ Multi-Agent 层                                               │
+│ Router / Tool / Analysis / Diagnosis / RiskReview            │
+├─────────────────────────────────────────────────────────────┤
+│ RAG 与知识服务层                                             │
+│ HybridSearch / Rerank / VectorSearch / KnowledgeGraph        │
+├─────────────────────────────────────────────────────────────┤
+│ 工具层                                                       │
+│ 本地工具 + MCP Power Tools                                   │
+├─────────────────────────────────────────────────────────────┤
+│ 数据与基础设施                                               │
+│ MySQL / Redis / Milvus / Docker                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Multi-Agent 设计
+
+| Agent | 模式 | 职责 |
+| --- | --- | --- |
+| RouterAgent | 低温度意图分类 | 判断用户请求属于知识问答、故障诊断还是普通对话，并返回结构化路由结果。 |
+| ToolAgent | ReAct + ToolCallback | 统一调用 MCP 工具和本地工具，屏蔽工具来源差异。 |
+| AnalysisAgent | ReAct 分析 | 汇总多维运维数据，形成面向诊断的分析结论。 |
+| DiagnosisAgent | ReAct 诊断 | 根据告警、证据和计划执行结果输出结构化诊断报告。 |
+| RiskReviewAgent | ReAct 风险复核 | 判断风险等级，给出安全约束、审批建议和行动建议。 |
+
+### 主流程
+
+```text
+用户输入
+  -> PreCheckNode：输入清洗、长度限制、安全检查
+  -> ContextLoadNode：加载历史会话、记忆和技能上下文
+  -> RouterNode：调用 RouterAgent 做意图识别
+  -> IntentDispatcher：分发到 KnowledgeQA / Diagnosis / Chat 子图
+  -> SafetyReviewNode：安全复核、Hook 执行、审计记录
+  -> FinalResponseNode：格式化最终响应
+  -> MemorySaveNode：保存会话记忆
+```
+
+### 子图流程
+
+| 子图 | 核心模式 | 关键节点 |
+| --- | --- | --- |
+| KnowledgeQA | RAG + ReAct + 回答评估循环 | QueryRewriteNode、RagRetrieveNode、ToolExecuteNode、RerankNode、ReactQaAgentNode、AnswerReviewNode、CitationCheckNode |
+| Diagnosis | Plan-Execute-Replan + Evidence Validation | EntityExtractNode、AlarmRagRetrieveNode、PlannerNode、ExecutorNode、EvidenceValidationNode、DiagnosisNode、RiskAssessmentNode、ReplannerNode、ActionRecommendNode |
+| Chat | RAG 增强对话 | ChatAgentNode |
+
+KnowledgeQA 子图：
+
+```text
+QueryRewriteNode
+  -> RagRetrieveNode
+  -> ToolExecuteNode
+  -> RerankNode
+  -> ReactQaAgentNode
+  -> AnswerReviewNode
+      -> ACCEPT: CitationCheckNode
+      -> NEED_MORE: 回到 RagRetrieveNode 重新检索
+```
+
+Diagnosis 子图：
+
+```text
+EntityExtractNode
+  -> AlarmRagRetrieveNode
+  -> PlannerNode
+  -> ExecutorNode
+  -> EvidenceValidationNode
+  -> DiagnosisNode
+  -> RiskAssessmentNode
+  -> ReplannerNode
+      -> CONTINUE: ActionRecommendNode
+      -> REPLAN / FALLBACK: 回到排查流程或降级输出
+```
+
+### 诊断任务模型
+
+诊断流程使用结构化任务对象表达，而不是只依赖自然语言上下文：
+
+- `DiagnosisTask`：诊断任务元信息。
+- `TaskPlan`：一次诊断计划。
+- `PlanStep`：单个排查步骤，包含步骤类型、工具名、参数、预期结果、是否必需、重试次数等。
+- `StepResult`：工具调用结果，记录状态、结果摘要、错误类型、是否可恢复、证据类型和耗时。
+
+### 状态与校验
+
+Graph 状态由 `GraphStateKeys`、`PowerOpsStateFactory` 和 `PowerOpsStateView` 统一管理，避免节点之间随意传递松散字段。关键状态包括：
+
+| 状态 | 说明 |
+| --- | --- |
+| `intent` | RouterAgent 识别出的意图。 |
+| `entities` | 查询改写或实体抽取得到的设备编号、告警类型、等级等信息。 |
+| `rag_results` | RAG 检索结果。 |
+| `plan_steps` | 诊断计划步骤。 |
+| `step_results` | 工具执行结果，使用追加策略保存。 |
+| `evidence_score` | 证据质量评分。 |
+| `diagnosis_result` | 结构化诊断结果。 |
+| `risk_level` | 风险复核等级。 |
+| `final_response` | 最终输出。 |
+
+关键校验器：
+
+| 组件 | 作用 |
+| --- | --- |
+| InputValidator | 清洗输入、过滤危险片段、补齐任务和追踪信息。 |
+| PlanValidator | 修复工具别名、限制计划步数、必要时回退默认诊断模板。 |
+| ToolResultValidator | 校验工具返回是否为空、JSON 是否合法、业务字段是否完整。 |
+| EvidenceQualityEvaluator | 对台账、实时状态、历史告警、日志、工单、安规等证据覆盖度评分。 |
+| DiagnosisValidator | 检查诊断报告是否包含告警摘要、关键证据、原因、风险、建议和安全说明。 |
 
 ## 环境要求
 
@@ -319,30 +460,6 @@ curl -X POST http://localhost:9900/api/knowledge/search/test \
   -H "Content-Type: application/json; charset=UTF-8" \
   -d "{\"query\":\"开关柜局放异常如何处理\",\"topK\":3}"
 ```
-
-## Agent 与流程
-
-主应用采用 Graph 编排，整体流程如下：
-
-```text
-用户输入
-  -> 输入校验与安全检查
-  -> 加载会话记忆、技能和历史上下文
-  -> RouterAgent 识别意图
-  -> 路由到 KnowledgeQA / Diagnosis / Chat 子流程
-  -> 安全复核、Hook、审计
-  -> 输出最终响应并保存记忆
-```
-
-当前主要 Agent：
-
-| Agent | 职责 |
-| --- | --- |
-| RouterAgent | 意图识别与路由。 |
-| ToolAgent | 统一调用本地工具和 MCP 工具。 |
-| AnalysisAgent | 多维数据分析。 |
-| DiagnosisAgent | 生成结构化诊断报告。 |
-| RiskReviewAgent | 风险复核与行动建议。 |
 
 ## MCP 工具清单
 
