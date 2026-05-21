@@ -1,14 +1,15 @@
 # GridOpsAgent
 
-GridOpsAgent 是一个面向电网智能运维场景的 Multi-Agent 平台。项目基于 Spring Boot 3.2、Spring AI、Spring AI Alibaba Graph、MCP、RAG、MySQL、Redis 和 Milvus 构建，提供电力知识问答、设备状态查询、告警诊断、知识库上传、审批与可观测性等能力。
+GridOpsAgent 是一个面向电网智能运维场景的 Multi-Agent 平台。项目基于 Spring Boot 3.2、Spring AI、Spring AI Alibaba Graph、MCP、RAG、MySQL、Redis 和 Milvus 构建，提供电力知识问答、设备状态查询、告警诊断、知识库上传、流程模板匹配、知识拓扑浏览、即时规划、审批与可观测性等能力。
 
-当前仓库是 Maven 多模块项目，核心代码是 Java；本地的 `nari_demo_test/` 是已忽略的 Python demo，不再作为仓库内容提交。
+当前仓库是 Maven 多模块项目，核心代码是 Java。`nari_demo_test/` 是本地 Python 原型目录，已经从 Git 仓库中移除并加入忽略；其中的“流程模板、知识图谱、即时规划、资产目录”思路已经迁移到 Java 主应用的 `knowledge-organization` 资源、接口、前端页面和 Planner 上下文中。
 
 ## 功能概览
 
 - 智能对话：支持普通问答、SSE 流式输出、会话历史与上下文记忆。
 - 告警诊断：围绕告警事件执行实体抽取、RAG 检索、计划生成、工具调用、证据校验、综合诊断和风险复核。
 - 知识库：支持上传 `txt`、`md`、`pdf`、`docx`、`xlsx`、`html` 文档，自动切片、向量化和检索。
+- 知识组织：内置由 nari 原型迁移而来的工作流模板、工具节点、知识实体和关系图谱，可用于流程匹配和即时规划。
 - MCP 工具：独立的电力工具服务暴露设备状态、告警历史、设备日志、缺陷工单、设备台账等查询工具。
 - 安全与治理：包含 RBAC、审批、Hook、审计日志、输入校验、工具结果校验、Resilience4j 重试与熔断。
 - 可观测性：提供健康检查、Trace 查询、Micrometer/Prometheus 指标暴露。
@@ -21,9 +22,25 @@ GridOpsAgent 不是一个简单的聊天接口包装，而是把电力运维流�
 - **Graph 显式编排**：基于 Spring AI Alibaba Graph 将输入校验、上下文加载、意图识别、子图执行、安全复核、记忆保存串成可观测流程。
 - **Plan-Execute-Replan 诊断闭环**：告警诊断不是一次性问答，而是先规划排查步骤，再调用设备状态、告警历史、日志、工单、台账等工具收集证据，根据证据质量决定继续、重规划或降级。
 - **RAG + ReAct 融合**：知识问答流程同时结合查询改写、混合检索、重排序、工具调用、回答质量评估和引用校验。
+- **nari 知识组织迁移**：将原 Python 原型中的流程模板、工具/算子、知识实体、图谱关系迁移为 Java classpath 资源，主应用启动时加载。
 - **MCP 工具隔离**：电力工具能力独立在 `power-tools-mcp-server`，主应用通过 MCP Client 调用，方便未来替换为真实 SCADA、PMS、工单、台账系统。
 - **工程化安全机制**：输入校验、工具结果校验、证据质量评分、高风险审批、Hook、审计日志和 Resilience4j 共同约束 Agent 行为。
 - **知识库构建能力**：支持多格式文档上传、切片、向量化、Milvus 存储、知识组织和版本管理。
+
+## 当前系统版本
+
+本版本可以理解为“Java 主系统 + nari 原型能力资源化迁移”的版本：
+
+| 能力 | 当前实现 |
+| --- | --- |
+| LLM 接入 | 使用 Spring AI OpenAI 兼容接口，默认 DeepSeek。API Key 读取环境变量 `DEEPSEEK_API_KEY`。 |
+| nari 工作流模板 | 已迁移到 `grid-ops-agent-app/src/main/resources/knowledge-organization/workflow_templates.json`，当前 9 个模板。 |
+| nari 知识图谱 | 已迁移到 `nodes.json`、`edges.json`、`schema.json`，当前 71 个节点、255 条边。 |
+| 即时规划 | Java 端 `/api/knowledge-org/instant-plan` 根据任务匹配模板、候选节点、推荐工具，并生成 `PlanStep`。 |
+| Graph Planner 接入 | `ContextLoadNode` 注入 workflow context，`PlannerNode` 在生成诊断计划时使用模板、图谱和 Skill 上下文。 |
+| 前端展示 | 主页面包含任务流程匹配、知识拓扑、流程编排、工具依赖、知识约束和当前任务子图视图。 |
+| 工具/算子映射 | nari 原型中的 `graph_query`、`topology_analyzer`、`operator_power_flow_calculation` 等映射为 Java 工具。 |
+| 工程边界 | 潮流估算、风险校核、故障场景生成等当前是 mock/estimate 能力，README 和工具返回会显式标注，不等同于真实 EMS/DTS 计算。 |
 
 ## 应用场景
 
@@ -35,6 +52,7 @@ GridOpsAgent 不是一个简单的聊天接口包装，而是把电力运维流�
 | 故障诊断 | 结合 RAG、实时数据、日志、工单和风险复核生成结构化诊断报告。 |
 | 知识库管理 | 上传电力文档，构建可检索、可引用、可版本管理的运维知识库。 |
 | 工具治理 | 对工具进行搜索、分类、高风险识别和统一调用。 |
+| 流程编排展示 | 输入调度/运维任务后，匹配 nari 迁移来的工作流模板，展示候选流程、工具链和任务相关子图。 |
 
 ## 项目结构
 
@@ -43,6 +61,11 @@ GridOpsAgent-main/
 ├── grid-ops-agent-app/          # 主应用，端口 9900
 ├── power-tools-mcp-server/      # MCP 工具服务，端口 9901
 ├── aiops-docs/                  # 示例电力知识文档，可上传到知识库
+├── grid-ops-agent-app/src/main/resources/knowledge-organization/
+│   ├── workflow_templates.json  # nari 迁移工作流模板
+│   ├── nodes.json               # 知识组织节点
+│   ├── edges.json               # 知识组织关系
+│   └── schema.json              # 图谱 schema
 ├── pom.xml                      # Maven 父工程
 ├── docker-compose.yml           # Milvus 简化编排
 ├── vector-database.yml          # Milvus + Attu 编排
@@ -106,12 +129,14 @@ GridOpsAgent-main/
 | DiagnosisAgent | ReAct 诊断 | 根据告警、证据和计划执行结果输出结构化诊断报告。 |
 | RiskReviewAgent | ReAct 风险复核 | 判断风险等级，给出安全约束、审批建议和行动建议。 |
 
+内置 Skill 当前包括主变油温异常诊断、开关柜局放异常诊断、安规条款查询、缺陷工单检查、配网线路跳闸抢修。Skill 用于给 Agent 注入业务场景提示、推荐工具和诊断流程参考。
+
 ### 主流程
 
 ```text
 用户输入
   -> PreCheckNode：输入清洗、长度限制、安全检查
-  -> ContextLoadNode：加载历史会话、记忆和技能上下文
+  -> ContextLoadNode：加载历史会话、记忆、Skill 和 nari 迁移工作流上下文
   -> RouterNode：调用 RouterAgent 做意图识别
   -> IntentDispatcher：分发到 KnowledgeQA / Diagnosis / Chat 子图
   -> SafetyReviewNode：安全复核、Hook 执行、审计记录
@@ -157,7 +182,7 @@ EntityExtractNode
 
 ### 诊断任务模型
 
-诊断流程使用结构化任务对象表达，而不是只依赖自然语言上下文：
+诊断流程使用结构化任务对象表达，而不是只依赖自然语言上下文。nari 工作流模板匹配后，会被转换为可执行或可参考的 `PlanStep`，再由 `PlanValidator` 和实际可用工具进行归一化：
 
 - `DiagnosisTask`：诊断任务元信息。
 - `TaskPlan`：一次诊断计划。
@@ -189,6 +214,33 @@ Graph 状态由 `GraphStateKeys`、`PowerOpsStateFactory` 和 `PowerOpsStateView
 | ToolResultValidator | 校验工具返回是否为空、JSON 是否合法、业务字段是否完整。 |
 | EvidenceQualityEvaluator | 对台账、实时状态、历史告警、日志、工单、安规等证据覆盖度评分。 |
 | DiagnosisValidator | 检查诊断报告是否包含告警摘要、关键证据、原因、风险、建议和安全说明。 |
+
+## nari 原型迁移内容
+
+原 `nari_demo_test` 里的 Python 版本偏“流程编排原型和图谱展示”。当前 Java 版本没有把 Python 服务本身提交到仓库，而是吸收了其中的核心建模成果：
+
+| nari 原型内容 | Java 主系统落点 |
+| --- | --- |
+| `data/workflow_templates.json` | `knowledge-organization/workflow_templates.json`，作为流程模板资源启动加载。 |
+| `graph/nodes.json`、`graph/edges.json` | `knowledge-organization/nodes.json`、`edges.json`，用于知识拓扑、任务子图和 Planner 上下文。 |
+| 流程检索 | `/api/knowledge-org/match` 和前端任务匹配区。 |
+| 即时规划 | `/api/knowledge-org/instant-plan`，输出命中模板、候选节点、推荐工具和 `plan_steps`。 |
+| 图谱浏览 | `/api/knowledge-org/graph` 和前端“知识拓扑”页面。 |
+| 资产概览 | `/api/knowledge-org/overview` 汇总模板、节点、边、Skill、工具和文档数量。 |
+| mock 潮流/稳定/故障算子 | `PowerAnalysisOperatorTools` 中的 `calculatePowerFlowEstimate`、`checkOperationRisk`、`generateFaultScenario` 等。 |
+
+当前内置的 9 个流程模板包括：
+
+| 场景 | 模板 |
+| --- | --- |
+| 故障处置 | 变电站全停故障处置、500kV 母线检修方式故障处置、新能源场站全场停电处置 |
+| 操作校核 | 负荷转供操作校核、继电保护投退方案校核、检修方式 N-1 风险校核 |
+| 潮流计算 | 潮流自动计算、断面潮流自动计算、运行方式调整后潮流越限校核 |
+
+这些模板会参与两条链路：
+
+- 页面链路：用户在首页任务区输入“负荷转供”“N-1 校核”“新能源场站全停”等任务，前端调用 `/api/knowledge-org/instant-plan`，展示命中流程、候选工具和当前任务子图。
+- Agent 链路：`ContextLoadNode` 根据用户输入构建 workflow context，`PlannerNode` 在诊断计划生成时把它作为约束和参考，优先生成当前 Java 工具能够执行的步骤。
 
 ## 环境要求
 
@@ -300,6 +352,16 @@ http://localhost:9900
 ```text
 http://localhost:9900/
 ```
+
+页面主要区域：
+
+| 页面/区域 | 用途 |
+| --- | --- |
+| 对话与诊断 | 调用 Chat、Graph 流式对话和告警诊断能力。 |
+| 任务流程匹配 | 输入调度或运维任务，匹配 nari 迁移工作流模板并生成即时计划。 |
+| 知识拓扑 | 查看流程模板、工具调用、知识实体之间的关系，可按流程编排、工具依赖、知识约束和当前任务子图过滤。 |
+| 知识库管理 | 上传 `aiops-docs/` 或自定义文档，构建 RAG 检索索引。 |
+| 观测与治理 | 查看工具、Skill、审批、Trace 等运行信息。 |
 
 ### 7. 验证服务
 
@@ -427,6 +489,10 @@ power:
 | 知识文档列表 | `GET /api/knowledge/documents` |
 | 知识检索测试 | `POST /api/knowledge/search/test` |
 | 知识组织概览 | `GET /api/knowledge-org/overview` |
+| 工作流模板列表 | `GET /api/knowledge-org/templates` |
+| 知识组织图谱 | `GET /api/knowledge-org/graph` |
+| 任务模板匹配 | `POST /api/knowledge-org/match` |
+| 即时规划 | `POST /api/knowledge-org/instant-plan` |
 | 工具列表 | `GET /api/tools/list` |
 | 工具搜索 | `GET /api/tools/search` |
 | 高风险工具 | `GET /api/tools/high-risk` |
@@ -461,6 +527,26 @@ curl -X POST http://localhost:9900/api/knowledge/search/test \
   -d "{\"query\":\"开关柜局放异常如何处理\",\"topK\":3}"
 ```
 
+查看 nari 迁移知识组织概览：
+
+```bash
+curl http://localhost:9900/api/knowledge-org/overview
+```
+
+任务流程匹配与即时规划：
+
+```bash
+curl -X POST http://localhost:9900/api/knowledge-org/instant-plan \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d "{\"query\":\"对某 220kV 站负荷转供方案做 N-1 风险校核，并给出操作前复核项\"}"
+```
+
+查询知识组织图谱：
+
+```bash
+curl "http://localhost:9900/api/knowledge-org/graph?category=skill_process&q=潮流"
+```
+
 ## MCP 工具清单
 
 `power-tools-mcp-server` 默认使用 mock 数据，适合本地演示和开发。
@@ -474,6 +560,22 @@ curl -X POST http://localhost:9900/api/knowledge/search/test \
 | `getDeviceProfile` | 查询设备台账。 |
 
 主应用还包含本地工具，例如当前时间、内部文档查询、电力安规查询等。
+
+## 本地工具和 nari 算子映射
+
+除 MCP 工具外，主应用还注册了一组本地工具，用于承接 nari 原型中的图谱查询、拓扑分析和机理算子概念：
+
+| 工具 | 说明 |
+| --- | --- |
+| `queryInternalDocs` | 查询已上传的 RAG 知识库。 |
+| `searchSafetyRules` | 查询内置/mock 电力安规和运行规程。 |
+| `queryKnowledgeGraph` | 查询 `knowledge-organization` 图谱资源。 |
+| `analyzeTopology` | 基于图谱关系返回关联节点、边和薄弱环节提示。 |
+| `calculatePowerFlowEstimate` | mock 潮流估算，用于流程演示和计划生成，不代表真实 EMS 计算。 |
+| `checkOperationRisk` | mock 操作风险校核，用于 N-1、转供、检修等场景的风险提示。 |
+| `generateFaultScenario` | mock 故障场景生成，用于故障处置预案和诊断规划。 |
+
+这些工具会在 Planner 中作为可用工具出现。涉及 `mock` 或 `estimate` 的结果只能作为演示证据或人工复核线索，正式调度操作前必须接入真实业务系统并人工确认。
 
 ## 常见问题
 
