@@ -1,7 +1,0 @@
-# 基础 Web/API 服务不依赖第三方包，以下为可选增强能力依赖。
-numpy
-FlagEmbedding
-torch
-transformers
-sentencepiece
-protobuf

@@ -49,5 +49,8 @@ uploads/
 # Environment
 .env
 
+# Local Python demo/prototype
+nari_demo_test/
+
 # Docker volumes
 volumes/
