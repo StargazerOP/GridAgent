@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>电网科学计算智能体流程编排平台</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand-title">电网科学计算智能体流程编排平台</div>
+        </div>
+      </div>
+      <nav class="side-nav">
+        <button class="nav-item active" data-tab="workspace">流程检索</button>
+        <button class="nav-item" data-tab="graph">图谱知识库</button>
+        <button class="nav-item" data-tab="assets">资产管理</button>
+      </nav>
+      <div class="side-card">
+        <div class="side-card-title">图谱组织方式</div>
+        <p>流程牵引工具，工具依赖知识，知识约束流程。</p>
+      </div>
+      <div class="side-stats">
+        <div><span id="statTemplates">0</span><small>工作流模板</small></div>
+        <div><span id="statNodes">0</span><small>图谱节点</small></div>
+        <div><span id="statEdges">0</span><small>关系边</small></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>机理-数据-知识融合的电网AI智能体</h1>
+          <p>工作流模板检索、任务编排画布、图谱知识库可视化</p>
+        </div>
+        <div class="status-pill"><span></span> 本地演示数据</div>
+      </header>
+
+      <section class="tab-panel active" id="tab-workspace">
+        <div class="workspace-grid">
+          <section class="panel search-panel">
+            <div class="panel-title-row">
+              <div>
+                <h2>流程检索与任务编排</h2>
+                <p>输入调度任务，优先匹配工作流；未命中时返回可能相关的节点和相关子图。</p>
+              </div>
+              <button class="secondary-btn" id="resetQuery">重置</button>
+            </div>
+            <div class="query-row">
+              <input id="queryInput" type="text" placeholder="例如：奥体变负荷转供调整后做潮流越限校核">
+              <button id="searchBtn">检索流程</button>
+            </div>
+            <div class="quick-prompts" id="quickPrompts"></div>
+            <div class="result-summary" id="resultSummary"></div>
+            <div class="instant-plan-actions" id="instantPlanActions">
+              <button id="instantPlanBtn">开启即时规划</button>
+              <label><input type="checkbox" id="instantUseLlm" checked> 调用后端LLM</label>
+            </div>
+          </section>
+
+          <section class="panel canvas-panel">
+            <div class="panel-title-row compact">
+              <div>
+                <h2>流程画布</h2>
+                <p>展示流程步骤及每一步对应工具/算子。</p>
+              </div>
+              <div class="legend">
+                <span class="legend-item workflow"></span>流程
+                <span class="legend-item tool"></span>工具
+                <span class="legend-item knowledge"></span>知识
+              </div>
+            </div>
+            <div class="workflow-canvas" id="workflowCanvas"></div>
+          </section>
+
+          <section class="panel fallback-panel">
+            <div class="panel-title-row compact">
+              <div>
+                <h2>可能相关的节点</h2>
+                <p>当没有足够可信的模板时，先返回可参考的知识、工具和数据资产节点。</p>
+              </div>
+            </div>
+            <div class="candidate-grid" id="candidateCards"></div>
+          </section>
+
+          <section class="panel subgraph-panel">
+            <div class="panel-title-row compact">
+              <div>
+                <h2>相关子图</h2>
+                <p>围绕候选节点展开一跳关系。</p>
+              </div>
+            </div>
+            <svg id="subgraphSvg" class="graph-svg" viewBox="0 0 760 420" role="img" aria-label="相关子图"></svg>
+          </section>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab-graph">
+        <div class="graph-page">
+          <section class="panel graph-controls">
+            <div>
+              <h2>完整图谱知识库</h2>
+              <p>节点卡片标注顶层类型；工具节点同时标注工具子类型。</p>
+            </div>
+            <div class="filter-row">
+              <button class="filter-chip active" data-filter="all">全部</button>
+              <button class="filter-chip" data-filter="skill_process">流程节点</button>
+              <button class="filter-chip" data-filter="tool_call">工具节点</button>
+              <button class="filter-chip" data-filter="knowledge_entity">知识实体</button>
+            </div>
+          </section>
+
+          <section class="panel full-graph-panel">
+            <div class="graph-shortcut-hint">快捷键缩放：Ctrl+- 缩小 · Ctrl+= 放大 · Ctrl+0 还原</div>
+            <svg id="fullGraphSvg" class="graph-svg large" viewBox="0 0 1200 680" role="img" aria-label="完整图谱"></svg>
+          </section>
+
+          <section class="panel node-list-panel">
+            <div class="panel-title-row compact">
+              <div>
+                <h2>节点卡片</h2>
+                <p>点击卡片可在图谱中高亮对应节点。</p>
+              </div>
+              <input id="nodeSearch" type="text" placeholder="搜索节点">
+            </div>
+            <div class="node-card-grid" id="nodeCards"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tab-assets">
+        <div class="asset-page">
+          <section class="panel asset-overview-panel">
+            <div class="panel-title-row">
+              <div>
+                <h2>原始资产与扩展管理</h2>
+                <p>统一查看数据资产表目录、原始文档资产和新增项登记流程。</p>
+              </div>
+              <button class="secondary-btn" id="refreshAssets">刷新资产</button>
+            </div>
+            <div class="asset-stats" id="assetStats"></div>
+            <div class="asset-type-tabs" id="assetTypeTabs"></div>
+          </section>
+
+          <section class="panel asset-search-panel">
+            <div class="panel-title-row compact">
+              <div>
+                <h2>后台资产目录</h2>
+                <p>统一展示工作流模板、Skill、算子/工具、文档资料、数据驱动模型和数据资产表。</p>
+              </div>
+              <div class="query-row compact-query">
+                <input id="assetSearchInput" type="text" placeholder="搜索表名、编码或说明">
+                <button id="assetSearchBtn">搜索</button>
+              </div>
+            </div>
+            <div class="asset-table-wrap">
+              <table class="asset-table">
+                <colgroup>
+                  <col class="asset-col-name">
+                  <col class="asset-col-type">
+                  <col class="asset-col-source">
+                  <col class="asset-col-status">
+                </colgroup>
+                <thead>
+                  <tr><th>资产名称</th><th>类型/编码</th><th>来源/分类</th><th>状态</th></tr>
+                </thead>
+                <tbody id="assetRows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel register-panel">
+            <div class="panel-title-row compact">
+              <div>
+                <h2>新增项登记</h2>
+                <p>用于登记新增文档、skill、工作流、机理工具、数据资产和数据驱动模型。</p>
+              </div>
+            </div>
+            <div class="register-grid">
+              <select id="registerKind">
+                <option value="document">文档资料</option>
+                <option value="workflow">工作流模板</option>
+                <option value="skill">Skill</option>
+                <option value="mechanism">机理工具/算子</option>
+                <option value="data_asset">数据资产</option>
+                <option value="data_driven_model">数据驱动模型</option>
+              </select>
+              <input id="registerName" type="text" placeholder="名称">
+              <input id="registerPath" type="text" placeholder="源文件路径，可选">
+              <textarea id="registerDescription" placeholder="说明、用途、输入输出或新增原因"></textarea>
+              <button id="registerBtn">登记新增项</button>
+            </div>
+            <div class="result-summary" id="registerResult"></div>
+          </section>
+
+          <section class="panel guide-panel">
+            <div class="panel-title-row compact">
+              <div>
+                <h2>统一新增流程</h2>
+                <p>登记后按类型执行后续步骤，避免直接手改多个文件时漏同步。</p>
+              </div>
+            </div>
+            <div class="guide-list" id="additionGuide"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="detail-drawer" id="detailDrawer" aria-hidden="true">
+    <div class="detail-card">
+      <div class="panel-title-row compact">
+        <div>
+          <h2 id="detailTitle">节点详情</h2>
+          <p id="detailSubtitle"></p>
+        </div>
+        <button class="secondary-btn" id="closeDetail">关闭</button>
+      </div>
+      <div id="detailBody" class="detail-body"></div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

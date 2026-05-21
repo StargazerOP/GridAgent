@@ -1,0 +1,53 @@
+# Compiled class files
+target/
+*.class
+__pycache__/
+*.py[cod]
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+logs/
+
+# Upload directory
+uploads/
+
+# Spring Boot DevTools
+.spring-boot-devtools.properties
+
+# Maven
+*.lastUpdated
+
+# Temp files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Trae IDE
+.trae/
+
+# Environment
+.env
+
+# Docker volumes
+volumes/

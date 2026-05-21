@@ -1,0 +1,58 @@
+[
+  {
+    "id": "op_aoti_transfer_check",
+    "scene": "operation_check",
+    "title": "奥体变负荷转供操作校核",
+    "query": "计划将奥体变10kV负荷转供至富城变和嘉庆变，并临时调整青竹园#2线、润地#4线保护，校核是否可行。",
+    "entities": ["奥体变", "富城变", "嘉庆变"],
+    "expected_tools": ["graph_query", "topology_analyzer", "mock_power_check", "regulation_retriever", "llm"]
+  },
+  {
+    "id": "op_protection_check",
+    "scene": "operation_check",
+    "title": "继电保护投退方案校核",
+    "query": "奥体变事故方式下，富城变青竹园#2线122开关定切保护停用、过流时间由1秒改为1.5秒，方案是否缺少风险控制措施？",
+    "entities": ["奥体变", "富城变"],
+    "expected_tools": ["regulation_retriever", "mock_power_check", "llm"]
+  },
+  {
+    "id": "op_dongshanqiao_n1_check",
+    "scene": "operation_check",
+    "title": "东善桥主变停役后N-1风险校核",
+    "query": "东善桥2号主变停役检修方式下发生N-1故障，评估风险并给出处置建议。",
+    "entities": ["东善桥2号主变"],
+    "expected_tools": ["graph_query", "topology_analyzer", "mock_power_check", "regulation_retriever", "llm"]
+  },
+  {
+    "id": "pf_aoti_snapshot_calculation",
+    "scene": "power_flow_calculation",
+    "title": "奥体变当前断面潮流自动计算",
+    "query": "奥体变当前断面潮流计算，输出节点电压、线路负载、越限信息和需要人工复核的风险点。",
+    "entities": ["奥体变"],
+    "expected_tools": ["source_scanner", "graph_query", "operator_power_flow_calculation", "power_flow_fast_estimator", "mock_power_check", "llm"]
+  },
+  {
+    "id": "fault_aoti_blackout_plan",
+    "scene": "fault_plan_generation",
+    "title": "奥体变全停事故处置预案生成",
+    "query": "奥体变全所失电，请生成事故处置预案，说明影响范围、重要用户和恢复步骤。",
+    "entities": ["奥体变"],
+    "expected_tools": ["plan_retriever", "graph_query", "topology_analyzer", "mock_stability_check", "regulation_retriever", "llm"]
+  },
+  {
+    "id": "fault_sanguandian_bus_plan",
+    "scene": "fault_plan_generation",
+    "title": "三官殿500kV母线检修方式下故障处置",
+    "query": "三官殿变500kV II段母线检修期间，I段母线故障，生成处置预案。",
+    "entities": ["三官殿变"],
+    "expected_tools": ["plan_retriever", "graph_query", "mock_stability_check", "regulation_retriever", "llm"]
+  },
+  {
+    "id": "fault_wind_farm_blackout_plan",
+    "scene": "fault_plan_generation",
+    "title": "风电场全场停电应急处置",
+    "query": "和风如海风电场全场停电，请匹配应急预案并生成处置流程。",
+    "entities": ["和风如海风电场"],
+    "expected_tools": ["plan_retriever", "graph_query", "mock_stability_check", "regulation_retriever", "llm"]
+  }
+]

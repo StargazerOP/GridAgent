@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridOpsAgent 知识驾驶舱</title>
+<style>
+:root {
+  --bg: #eef2ee;
+  --panel: #fff;
+  --panel-soft: #f7fafb;
+  --line: #d5dee7;
+  --text: #17212b;
+  --muted: #667382;
+  --green: #176b5a;
+  --green-soft: #dff3ed;
+  --blue: #2f70b7;
+  --blue-soft: #e3eef9;
+  --orange: #c77a2a;
+  --orange-soft: #fff1df;
+  --purple: #6658b4;
+  --purple-soft: #eeecfb;
+  --red: #d34b58;
+  --shadow: 0 8px 22px rgba(26, 42, 58, .07);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,0) 180px),
+    linear-gradient(90deg, rgba(23,107,90,.05) 0 1px, transparent 1px),
+    var(--bg);
+  background-size: auto, 26px 26px, auto;
+  color: var(--text);
+  font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+}
+button, input, textarea, select { font: inherit; }
+button { border: 0; cursor: pointer; border-radius: 8px; }
+.shell { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  background: #1f312d;
+  border-right: 1px solid #18302b;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.brand { display: flex; align-items: center; gap: 12px; padding: 8px; }
+.brand-mark {
+  width: 38px; height: 38px; border-radius: 8px;
+  background: #dcefe8; border: 1px solid #8fcfbd;
+  color: #134f43; display: grid; place-items: center; font-weight: 900;
+}
+.brand-title { font-weight: 900; color: #f8fbf9; }
+.brand-subtitle { color: #a7bcb5; font-size: 12px; margin-top: 2px; }
+.nav { display: grid; gap: 7px; }
+.nav button {
+  background: transparent;
+  color: #d5e0dc;
+  padding: 12px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  position: relative;
+}
+.nav button:hover { background: rgba(255,255,255,.07); }
+.nav button.active { background: #e5f1ed; color: #143f37; font-weight: 800; }
+.nav button.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--green);
+}
+.nav .icon { display: none; }
+.side-card {
+  border: 1px solid rgba(174,207,196,.38);
+  background: rgba(255,255,255,.06);
+  border-radius: 8px;
+  padding: 12px;
+  color: #d8e6e1;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.stats { margin-top: auto; display: grid; gap: 8px; }
+.stat {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.stat b { color: #c8f0e2; font-size: 22px; }
+.stat small { color: #a7bcb5; }
+.main { min-width: 0; padding: clamp(18px, 1.3vw, 34px); width: 100%; }
+.topbar {
+  min-height: 82px;
+  background:
+    linear-gradient(90deg, rgba(23,107,90,.12), rgba(47,112,183,.09)),
+    #ffffff;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 16px 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--green);
+}
+.topbar h1 { margin: 0; font-size: 26px; letter-spacing: 0; }
+.topbar p { margin: 6px 0 0; color: var(--muted); }
+.status-pill {
+  background: #edf8f4;
+  border: 1px solid #badfd2;
+  color: #176b5a;
+  padding: 8px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.tab-panel { display: none; margin-top: 16px; }
+.tab-panel.active { display: block; }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.panel::selection, .card::selection { background: #bfe6d8; }
+.panel h2 { margin: 0; font-size: 18px; }
+.panel p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(360px, .7fr); gap: 14px; align-items: stretch; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.query-row { display: flex; gap: 10px; }
+input, textarea, select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  outline: none;
+  min-width: 0;
+  background: #fff;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: #7bb8df;
+  box-shadow: 0 0 0 3px rgba(57,121,212,.12);
+}
+.query-row input, .query-row textarea { flex: 1; }
+.primary { background: var(--blue); color: #fff; font-weight: 800; padding: 10px 14px; }
+.success { background: var(--green); color: #fff; font-weight: 800; padding: 10px 14px; }
+.secondary { border: 1px solid var(--line); background: #fff; color: #4b5563; padding: 9px 12px; }
+.danger { background: rgba(211,75,88,.12); color: var(--red); padding: 9px 12px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #4b5563;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+.chip:hover, .chip.active { border-color: #8fcfbd; background: var(--green-soft); color: #17604d; }
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.card {
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 0;
+}
+.card b { display: block; margin-bottom: 6px; }
+.card small { color: var(--muted); }
+.workflow-canvas {
+  margin-top: 14px;
+  min-height: clamp(250px, 22vh, 380px);
+  overflow: auto;
+  border: 1px solid #dfe8f3;
+  border-radius: 8px;
+  background:
+    linear-gradient(#eef3f8 1px, transparent 1px),
+    linear-gradient(90deg, #eef3f8 1px, transparent 1px);
+  background-size: 28px 28px;
+  padding: 22px;
+}
+.flow-row { display: flex; gap: 18px; min-width: max-content; align-items: stretch; }
+.flow-card {
+  width: 198px;
+  min-height: 118px;
+  background: #fff;
+  border: 1px solid #d9e5f2;
+  border-top: 5px solid var(--blue);
+  border-radius: 8px;
+  padding: 12px;
+  position: relative;
+  box-shadow: 0 8px 18px rgba(30,64,105,.08);
+}
+.flow-card.mock { border-top-color: var(--orange); }
+.flow-card::after { content: ""; position: absolute; right: -22px; top: 48px; width: 22px; height: 2px; background: #8bb5df; }
+.flow-card:last-child::after { display: none; }
+.flow-index {
+  width: 22px; height: 22px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--blue-soft); color: #245fae;
+  font-weight: 900; font-size: 12px; margin-bottom: 8px;
+}
+.task-context {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 360px);
+  gap: 12px;
+  margin-top: 12px;
+}
+.task-graph {
+  width: 100%;
+  height: clamp(260px, 27vh, 430px);
+  border: 1px solid #dfe8f3;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 16px 16px, rgba(23,107,90,.12) 1px, transparent 1.5px),
+    #fbfdfc;
+  background-size: 26px 26px;
+}
+.task-graph-edge { stroke: #9eb3c4; stroke-width: 1.2; fill: none; opacity: .75; }
+.task-graph-edge.focus { stroke: var(--green); stroke-width: 2.2; opacity: 1; }
+.task-graph-node { cursor: pointer; }
+.task-graph-node circle, .task-graph-node rect { stroke: #fff; stroke-width: 2; filter: drop-shadow(0 5px 10px rgba(20,45,60,.12)); }
+.task-graph-label { font-size: 10px; font-weight: 800; fill: #17212b; pointer-events: none; }
+.template-detail { min-height: clamp(260px, 27vh, 430px); }
+.template-detail ul { margin: 8px 0 0; padding-left: 18px; color: #41505f; line-height: 1.55; font-size: 13px; }
+.flow-step { font-size: 14px; font-weight: 800; line-height: 1.35; }
+.tool-pill {
+  display: inline-flex;
+  max-width: 100%;
+  margin-top: 10px;
+  padding: 5px 7px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: #17604d;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.tool-pill.mock { background: var(--orange-soft); color: #92501a; }
+.node-list, .doc-list, .session-list { display: grid; gap: 10px; max-height: 650px; overflow: auto; padding-right: 3px; }
+.node-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fff; cursor: pointer; }
+.node-card:hover, .node-card.selected { border-color: #8fcfbd; box-shadow: 0 10px 20px rgba(36,96,83,.08); }
+.node-card p { margin: 6px 0 0; color: var(--muted); font-size: 13px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.tag { display: inline-flex; border-radius: 999px; padding: 4px 7px; font-size: 12px; background: #edf2f7; color: #4b5563; margin-right: 5px; margin-top: 5px; }
+.tag.skill { background: var(--blue-soft); color: #245fae; }
+.tag.tool { background: var(--green-soft); color: #17604d; }
+.tag.knowledge { background: var(--orange-soft); color: #92501a; }
+.chat-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 390px;
+  gap: 14px;
+  height: calc(100vh - 132px);
+  min-height: 620px;
+}
+.chat-main { display: flex; flex-direction: column; min-height: 0; padding: 0; overflow: hidden; }
+.diagnosis-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #f8fbfa;
+}
+.phase-card {
+  border: 1px solid #dce7e2;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+  min-width: 0;
+}
+.phase-card b { display: block; font-size: 13px; margin-bottom: 4px; }
+.phase-card small { color: var(--muted); font-size: 12px; }
+.phase-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  background: var(--green);
+}
+.chat-side { display: grid; gap: 12px; align-content: start; overflow: auto; padding-right: 3px; }
+.side-section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+}
+.side-section h3 { margin: 0 0 8px; font-size: 15px; }
+.route-stack { display: grid; gap: 8px; }
+.route-card {
+  border: 1px solid #dde8f2;
+  border-left: 4px solid var(--blue);
+  border-radius: 8px;
+  padding: 10px;
+  background: #f9fcff;
+}
+.route-card b { display: block; font-size: 13px; }
+.route-card small { color: var(--muted); display: block; margin-top: 4px; line-height: 1.45; }
+.agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.agent-card {
+  border: 1px solid #dce7e2;
+  border-radius: 8px;
+  padding: 9px;
+  background: #fbfdfc;
+  min-height: 72px;
+}
+.agent-card b { display: block; font-size: 13px; margin-bottom: 4px; }
+.agent-card small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #fff;
+}
+.messages::-webkit-scrollbar,
+.node-list::-webkit-scrollbar,
+.doc-list::-webkit-scrollbar,
+.session-list::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.messages::-webkit-scrollbar-thumb,
+.node-list::-webkit-scrollbar-thumb,
+.doc-list::-webkit-scrollbar-thumb,
+.session-list::-webkit-scrollbar-thumb,
+.table-wrap::-webkit-scrollbar-thumb {
+  background: #c5d2dd;
+  border-radius: 999px;
+  border: 2px solid #f8fafc;
+}
+.messages::-webkit-scrollbar-track,
+.node-list::-webkit-scrollbar-track,
+.doc-list::-webkit-scrollbar-track,
+.session-list::-webkit-scrollbar-track,
+.table-wrap::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+.message {
+  max-width: min(980px, 86%);
+  padding: 12px 14px;
+  border-radius: 10px;
+  white-space: pre-wrap;
+  line-height: 1.62;
+  font-size: 14px;
+}
+.user-message { align-self: flex-end; background: var(--blue); color: #fff; border-bottom-right-radius: 4px; }
+.ai-message { align-self: flex-start; background: #f8fbff; border: 1px solid #dfebff; color: #334155; border-bottom-left-radius: 4px; }
+.stream-steps { font-size: 12px; color: var(--muted); padding-bottom: 6px; margin-bottom: 8px; overflow: visible; }
+.trace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.trace-title { color: #263744; font-weight: 900; }
+.trace-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #cfe2dc;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #17604d;
+  background: #f2fbf8;
+}
+.trace-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(23,107,90,.45);
+  animation: tracePulse 1.25s infinite;
+}
+.trace-state.done .trace-pulse { animation: none; box-shadow: none; }
+@keyframes tracePulse {
+  0% { box-shadow: 0 0 0 0 rgba(23,107,90,.45); }
+  70% { box-shadow: 0 0 0 7px rgba(23,107,90,0); }
+  100% { box-shadow: 0 0 0 0 rgba(23,107,90,0); }
+}
+.trace-list { display: grid; gap: 4px; }
+.trace-active { display: grid; gap: 4px; }
+.trace-archive {
+  margin-top: 4px;
+  border-left: 2px solid #d4e3de;
+  padding-left: 9px;
+}
+.trace-archive > summary {
+  list-style: none;
+  cursor: pointer;
+  color: #526173;
+  font-weight: 800;
+  padding: 6px 0;
+}
+.trace-archive > summary::-webkit-details-marker { display: none; }
+.trace-archive[open] > summary { color: #245fae; }
+.trace-item {
+  border-left: 2px solid #d4e3de;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+}
+.trace-item[open] { border-left-color: var(--green); }
+.trace-item summary {
+  list-style: none;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0 7px 9px;
+}
+.trace-item summary::-webkit-details-marker { display: none; }
+.trace-node { color: #17212b; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trace-meta { color: var(--muted); font-size: 11px; }
+.trace-badge {
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: var(--blue-soft);
+  color: #245fae;
+  font-weight: 800;
+  font-size: 11px;
+}
+.trace-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #cfe2dc;
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin .9s linear infinite;
+}
+.trace-item.done .trace-spinner { animation: none; border-color: var(--green); background: var(--green); }
+.trace-item.status.done { opacity: .72; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.trace-detail {
+  border-top: 1px dashed #edf2f4;
+  margin-left: 9px;
+  padding: 8px 0 8px 10px;
+  display: grid;
+  gap: 8px;
+}
+.trace-detail .route-card {
+  border-left-width: 3px;
+  background: rgba(249,252,255,.76);
+}
+.trace-kv { display: flex; flex-wrap: wrap; gap: 6px; }
+.trace-json {
+  margin: 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(246,248,250,.75);
+  color: #334155;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.trace-raw summary {
+  display: inline-flex;
+  grid-template-columns: none;
+  padding: 0;
+  color: #245fae;
+  font-weight: 800;
+}
+.trace-raw[open] summary { margin-bottom: 8px; }
+.final-answer {
+  padding-top: 8px;
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+.chat-input { border-top: 1px solid var(--line); padding: 14px; display: flex; gap: 10px; background: #fbfdff; }
+.chat-input textarea { flex: 1; resize: none; min-height: 48px; max-height: 140px; }
+.btn-col { display: grid; gap: 8px; align-content: start; }
+.alarm-form { display: grid; gap: 10px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.graph-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 440px); gap: 14px; align-items: stretch; }
+.graph-toolbar { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 12px; }
+.graph-canvas-wrap { position: relative; min-height: clamp(650px, 74vh, 980px); }
+.graph-svg {
+  width: 100%;
+  height: clamp(650px, 74vh, 980px);
+  border: 1px solid #dfe8f3;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 18px 18px, rgba(47,112,183,.12) 1px, transparent 1.5px),
+    #fbfdff;
+  background-size: 30px 30px;
+  cursor: grab;
+}
+.graph-svg:active { cursor: grabbing; }
+.graph-legend { position: absolute; left: 16px; top: 14px; color: var(--muted); font-size: 12px; display: flex; gap: 10px; pointer-events: none; }
+.graph-help {
+  position: absolute;
+  right: 16px;
+  top: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  background: rgba(255,255,255,.78);
+  border: 1px solid #dfe8f3;
+  border-radius: 999px;
+  padding: 6px 10px;
+  pointer-events: none;
+}
+.legend-box { width: 12px; height: 12px; display: inline-block; border-radius: 3px; margin-right: 4px; vertical-align: -2px; }
+.edge { stroke: #a8b8ca; stroke-width: 1.2; fill: none; opacity: .72; }
+.edge.highlight { stroke: var(--green); stroke-width: 2.3; opacity: 1; }
+.edge.orchestrates { stroke: #2f70b7; }
+.edge.depends_on { stroke: #d08a35; stroke-dasharray: 5 4; }
+.edge.constrains { stroke: #8b5dbf; stroke-dasharray: 3 4; }
+.edge.contains { stroke: #7fa2bd; }
+.graph-node { cursor: pointer; }
+.graph-node circle, .graph-node rect { stroke: #fff; stroke-width: 2; filter: drop-shadow(0 4px 7px rgba(30,50,70,.11)); }
+.graph-label { font-size: 8.5px; fill: #1f2937; font-weight: 800; pointer-events: none; }
+.graph-sub { font-size: 7px; fill: #6b7280; pointer-events: none; }
+.graph-lane-label { font-size: 13px; fill: #64748b; font-weight: 800; letter-spacing: 0; }
+.graph-lane-line { stroke: #e1e8ef; stroke-width: 1; stroke-dasharray: 4 6; }
+.admin-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 14px; }
+.upload-box { border: 1px dashed #a8d7c7; border-radius: 8px; background: #f2fbf8; padding: 14px; display: grid; gap: 10px; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table th, .table td { border-bottom: 1px solid #edf2f7; padding: 9px; text-align: left; vertical-align: top; }
+.table th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
+.table-wrap { max-height: 560px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+.empty { color: var(--muted); text-align: center; padding: 42px 12px; }
+@media (max-width: 1180px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { position: sticky; top: 0; z-index: 10; height: auto; max-height: 92px; flex-direction: row; align-items: center; overflow: auto; }
+  .side-card, .stats { display: none; }
+  .nav { display: flex; min-width: max-content; }
+  .chat-shell, .graph-layout, .grid-2, .admin-grid, .task-context { grid-template-columns: 1fr; }
+  .chat-shell { height: auto; min-height: 620px; }
+  .chat-main { height: 680px; min-height: 620px; }
+}
+@media (min-width: 1800px) {
+  .shell { grid-template-columns: 260px minmax(0, 1fr); }
+  .grid-2 { grid-template-columns: minmax(0, 1.65fr) minmax(420px, .55fr); gap: 18px; }
+  .graph-layout { grid-template-columns: minmax(0, 1fr) minmax(420px, 520px); gap: 18px; }
+  .panel { padding: 18px; }
+}
+@media (max-width: 720px) {
+  .topbar, .panel-head, .query-row, .chat-input, .graph-toolbar { flex-direction: column; align-items: stretch; }
+  .summary-grid, .grid-3, .two, .diagnosis-strip, .agent-grid { grid-template-columns: 1fr; }
+  .message { max-width: 96%; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">G</div>
+      <div>
+        <div class="brand-title">GridOpsAgent</div>
+        <div class="brand-subtitle">知识组织驾驶舱</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="active" data-tab="task">任务编排台</button>
+      <button data-tab="chat">协同诊断会话</button>
+      <button data-tab="graph">知识拓扑</button>
+      <button data-tab="knowledge">知识库运维</button>
+    </nav>
+    <div class="side-card">面向调度与运维场景组织流程、算子、知识依据和诊断会话，支持从任务到执行计划的连续分析。</div>
+    <div class="stats">
+      <div class="stat"><b id="statTemplates">0</b><small>流程模板</small></div>
+      <div class="stat"><b id="statNodes">0</b><small>图谱节点</small></div>
+      <div class="stat"><b id="statTools">0</b><small>注册工具</small></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="pageTitle">任务编排台</h1>
+        <p id="pageSubtitle">识别调度任务意图，生成可执行分析步骤，并联动相关知识依据。</p>
+      </div>
+      <div class="status-pill" id="apiStatus">连接检测中</div>
+    </header>
+
+    <section id="tab-task" class="tab-panel active">
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>流程匹配</h2>
+              <p>输入调度或运维任务，系统会匹配内置流程模板，转化为可执行的分析步骤和工具调用顺序。</p>
+            </div>
+            <button class="secondary" onclick="resetTask()">重置</button>
+          </div>
+          <div class="query-row">
+            <input id="taskInput" value="主变油温异常诊断，请查询状态、告警历史并给出处置建议" placeholder="例如：负荷转供操作校核、N-1 风险分析、主变油温异常诊断">
+            <button class="primary" onclick="matchTask()">匹配流程</button>
+          </div>
+          <div class="chip-row" id="quickPrompts"></div>
+          <div class="summary-grid" id="matchSummary"></div>
+          <div class="workflow-canvas" id="workflowFlow"><div class="empty">等待任务匹配</div></div>
+          <div class="task-context">
+            <div>
+              <div class="panel-head" style="margin:0 0 8px;">
+                <div>
+                  <h2>关联图谱</h2>
+                  <p>根据命中结果重现局部流程、工具和知识关系。</p>
+                </div>
+                <button class="secondary" onclick="openTaskGraph()">进入拓扑</button>
+              </div>
+              <svg id="taskGraphSvg" class="task-graph" viewBox="0 0 900 340" role="img" aria-label="任务关联图谱"></svg>
+            </div>
+            <div id="taskTemplateDetail" class="card template-detail"><div class="empty">选择候选节点查看模板依据</div></div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>候选知识节点</h2>
+              <p>展示当前任务相关的流程、工具、实体、规则、案例和数据资产。</p>
+            </div>
+          </div>
+          <div id="candidateNodes" class="node-list"><div class="empty">等待任务匹配</div></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-chat" class="tab-panel">
+      <div class="chat-shell">
+        <section class="panel chat-main">
+          <div class="panel-head" style="padding:16px;margin:0;border-bottom:1px solid var(--line);">
+            <div>
+              <h2>运行诊断控制台</h2>
+              <p>意图、证据、计划、执行和校核集中呈现，适配知识问答、设备诊断和操作风险分析。</p>
+            </div>
+            <button class="danger" onclick="clearSession()">清空会话</button>
+          </div>
+          <div class="diagnosis-strip">
+            <div class="phase-card"><b><span class="phase-dot"></span>意图路由</b><small>knowledge_qa / diagnosis / chat</small></div>
+            <div class="phase-card"><b><span class="phase-dot"></span>上下文装载</b><small>知识库、图谱、告警、流程模板</small></div>
+            <div class="phase-card"><b><span class="phase-dot"></span>计划编排</b><small>PlanStep、工具别名、执行依赖</small></div>
+            <div class="phase-card"><b><span class="phase-dot"></span>结果校核</b><small>证据合并、风险项、人工复核</small></div>
+          </div>
+          <div id="messages" class="messages">
+            <div class="empty">等待调度问询或告警诊断任务</div>
+          </div>
+          <div class="chat-input">
+            <textarea id="questionInput" placeholder="输入运维问题或诊断请求..." rows="1"></textarea>
+            <div class="btn-col">
+              <button id="sendBtn" class="primary" onclick="sendMessage()">发送</button>
+              <button id="diagnoseBtn" class="success" onclick="startDiagnosis()">告警诊断</button>
+            </div>
+          </div>
+        </section>
+        <aside class="panel chat-side">
+          <div class="side-section">
+            <h3>编排链路</h3>
+            <div class="route-stack">
+              <div class="route-card"><b>RouterAgent</b><small>识别任务类型，决定知识问答、诊断或通用会话路径。</small></div>
+              <div class="route-card"><b>PlannerAgent</b><small>结合流程模板与可用工具，生成可执行步骤。</small></div>
+              <div class="route-card"><b>ToolAgent</b><small>调用知识库、图谱、拓扑分析和风险校核工具。</small></div>
+              <div class="route-card"><b>ReviewerAgent</b><small>汇总证据、风险项和人工复核要求。</small></div>
+            </div>
+          </div>
+          <div class="side-section">
+            <h3>能力矩阵</h3>
+            <div class="agent-grid">
+              <div class="agent-card"><b>知识召回</b><small>规程、手册、案例、专家经验</small></div>
+              <div class="agent-card"><b>图谱查询</b><small>设备、流程、工具、约束关系</small></div>
+              <div class="agent-card"><b>拓扑分析</b><small>影响范围、关联设备、薄弱环节</small></div>
+              <div class="agent-card"><b>风险校核</b><small>操作约束、越限、复核项</small></div>
+            </div>
+          </div>
+          <div class="side-section">
+            <h3>快速任务</h3>
+            <div class="chip-row" style="margin-top:0;">
+              <button class="chip" onclick="askQuick('主变TR-110KV-001油温86C超过80C阈值，请诊断')">主变油温诊断</button>
+              <button class="chip" onclick="askQuick('查询TR-110KV-001设备状态和历史告警')">状态与告警查询</button>
+              <button class="chip" onclick="askQuick('负荷转供操作需要做哪些风险校核')">操作风险校核</button>
+              <button class="chip" onclick="askQuick('500kV母线检修方式下N-1风险如何评估')">N-1风险评估</button>
+            </div>
+          </div>
+          <div class="side-section">
+            <h3>告警诊断入口</h3>
+            <div class="alarm-form">
+              <div class="two">
+                <select id="alarmDeviceType"><option value="">设备类型</option><option value="主变压器">主变压器</option><option value="开关柜">开关柜</option><option value="线路">线路</option></select>
+                <select id="alarmLevel"><option value="">告警等级</option><option value="一般">一般</option><option value="严重">严重</option><option value="危急">危急</option></select>
+              </div>
+              <input id="alarmDeviceId" placeholder="设备编号，例如 TR-110KV-001">
+              <input id="alarmType" placeholder="告警类型，例如 油温越限">
+              <input id="alarmValue" placeholder="当前值/阈值，例如 86C/80C">
+              <textarea id="alarmDescription" rows="3" placeholder="告警描述"></textarea>
+              <button class="success" onclick="submitAlarm()">提交告警并诊断</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="tab-graph" class="tab-panel">
+      <div class="graph-layout">
+        <section class="panel">
+          <div class="graph-toolbar">
+            <div>
+              <h2>知识组织图谱</h2>
+              <p>按调度任务视角拆成编排、算子、约束和任务子图，支持缩放、平移和节点聚焦。</p>
+            </div>
+            <div class="chip-row" style="margin-top:0;">
+              <button class="chip active" data-graph-mode="overview" onclick="setGraphMode(this)">全景</button>
+              <button class="chip" data-graph-mode="workflow" onclick="setGraphMode(this)">流程编排</button>
+              <button class="chip" data-graph-mode="tooling" onclick="setGraphMode(this)">工具依赖</button>
+              <button class="chip" data-graph-mode="governance" onclick="setGraphMode(this)">知识约束</button>
+              <button class="chip" data-graph-mode="task" onclick="setGraphMode(this)">当前任务子图</button>
+            </div>
+          </div>
+          <div class="query-row" style="margin-bottom:12px;">
+            <input id="graphSearch" placeholder="搜索节点，例如 潮流、负荷转供、安规、主变">
+            <button class="primary" onclick="loadGraph()">搜索</button>
+            <button class="secondary" onclick="clearGraphSearch()">清空</button>
+            <button class="secondary" onclick="resetGraphView()">重置视图</button>
+          </div>
+          <div class="chip-row" style="margin-top:0;margin-bottom:12px;">
+            <button class="chip active" data-graph-depth="core" onclick="setGraphDepth(this)">主干视图</button>
+            <button class="chip" data-graph-depth="expanded" onclick="setGraphDepth(this)">扩展关系</button>
+            <button class="chip" data-graph-depth="all" onclick="setGraphDepth(this)">全量探索</button>
+          </div>
+          <div class="graph-canvas-wrap">
+            <div class="graph-legend">
+              <span><i class="legend-box" style="background:#dbeafe"></i>流程</span>
+              <span><i class="legend-box" style="background:#d7f2e8"></i>工具</span>
+              <span><i class="legend-box" style="background:#fff0df"></i>知识</span>
+            </div>
+            <div class="graph-help">滚轮缩放 · 拖拽平移 · 点击聚焦</div>
+            <svg id="graphSvg" class="graph-svg" viewBox="0 0 1180 650" role="img" aria-label="知识组织图谱"></svg>
+          </div>
+        </section>
+        <aside class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>节点详情</h2>
+              <p>点击图谱节点或右侧列表查看详情。</p>
+            </div>
+          </div>
+          <div id="graphDetail" class="card" style="margin-bottom:12px;">暂无选中节点</div>
+          <div id="graphNodeList" class="node-list"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="tab-knowledge" class="tab-panel">
+      <div class="admin-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>知识库上传</h2>
+              <p>统一管理规程、设备手册、案例和专家经验等检索资料。</p>
+            </div>
+          </div>
+          <div class="upload-box">
+            <input type="file" id="docFile">
+            <div class="two">
+              <select id="docType"><option value="电力安规">电力安规</option><option value="设备手册">设备手册</option><option value="故障处理规程">故障处理规程</option><option value="历史故障案例">历史故障案例</option><option value="专家经验文档">专家经验文档</option></select>
+              <input id="docSource" placeholder="来源，例如 本地上传">
+            </div>
+            <input id="docTags" placeholder="标签，例如 主变,安规,抢修">
+            <textarea id="docDescription" rows="3" placeholder="文档说明"></textarea>
+            <button class="success" onclick="uploadDocument()">上传并索引</button>
+            <div id="uploadResult" class="card">等待上传</div>
+          </div>
+          <div class="panel-head" style="margin-top:16px;">
+            <div>
+              <h2>检索测试</h2>
+              <p>验证知识库召回效果。</p>
+            </div>
+          </div>
+          <div class="query-row">
+            <input id="searchQuery" placeholder="例如 主变油温异常处理">
+            <button class="primary" onclick="testKnowledgeSearch()">检索</button>
+          </div>
+          <div id="searchResults" class="node-list" style="margin-top:12px;"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>文档列表</h2>
+              <p>查看当前知识库中的文档及处理状态。</p>
+            </div>
+            <button class="secondary" onclick="loadDocuments()">刷新</button>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>文档</th><th>类型</th><th>状态</th><th>切片</th><th>操作</th></tr></thead>
+              <tbody id="docRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="sse-parser.js"></script>
+<script>
+var sessionId = localStorage.getItem('gridops_sessionId') || generateSessionId();
+localStorage.setItem('gridops_sessionId', sessionId);
+var isProcessing = false;
+var graphState = {
+  nodes: [],
+  edges: [],
+  mode: 'overview',
+  selectedId: '',
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  dragging: false,
+  dragStartX: 0,
+  dragStartY: 0,
+  dragOriginX: 0,
+  dragOriginY: 0,
+  depth: 'core'
+};
+var taskState = {
+  payload: null,
+  candidateNodes: [],
+  selectedNodeId: '',
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  dragging: false,
+  dragStartX: 0,
+  dragStartY: 0,
+  dragOriginX: 0,
+  dragOriginY: 0
+};
+var quickPrompts = [
+  '主变油温异常诊断，请查询状态、告警历史并给出处置建议',
+  '负荷转供操作校核，分析潮流越限和安规约束',
+  '500kV母线检修方式下发生N-1故障，生成风险校核流程',
+  '新能源场站全场停电，请生成处置关注点'
+];
+var tabMeta = {
+  task: ['任务编排台', '识别调度任务意图，生成可执行分析步骤，并联动相关知识依据。'],
+  chat: ['运行诊断控制台', '多 Agent 编排、工具调用、证据检索和诊断结论集中呈现。'],
+  graph: ['知识拓扑', '按流程编排、工具依赖、知识约束和任务子图浏览内置知识组织。'],
+  knowledge: ['知识库运维', '在同一套界面中完成文档上传、列表查看和检索测试。']
+};
+
+function generateSessionId() { return 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+function escapeHtml(text) { var d = document.createElement('div'); d.textContent = text == null ? '' : String(text); return d.innerHTML; }
+function truncate(text, max) { text = text || ''; return text.length > max ? text.slice(0, max - 1) + '…' : text; }
+function zoomTier(zoom) {
+  if (zoom >= 2.4) return 4;
+  if (zoom >= 1.75) return 3;
+  if (zoom >= 1.25) return 2;
+  return 1;
+}
+function labelLimitForZoom(node, zoom) {
+  var text = node.name || node.id || '';
+  if (zoom >= 2.4) return text.length + 1;
+  if (zoom >= 1.75) return node.category === 'skill_process' ? 22 : 16;
+  if (zoom >= 1.25) return node.category === 'skill_process' ? 14 : 10;
+  return node.category === 'skill_process' ? 9 : 5;
+}
+function card(title, value, note) { return '<div class="card"><b>' + escapeHtml(title) + '</b><div style="font-size:24px;color:var(--green);font-weight:900;">' + escapeHtml(value) + '</div><small>' + escapeHtml(note) + '</small></div>'; }
+
+document.querySelectorAll('.nav button').forEach(function(btn) {
+  btn.addEventListener('click', function() { switchTab(btn.dataset.tab); });
+});
+function switchTab(tab) {
+  document.querySelectorAll('.nav button').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === tab); });
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('pageTitle').textContent = tabMeta[tab][0];
+  document.getElementById('pageSubtitle').textContent = tabMeta[tab][1];
+  location.hash = tab;
+  if (tab === 'graph') { syncGraphModeButtons(); loadGraph(); bindGraphInteractions(); }
+  if (tab === 'knowledge') loadDocuments();
+}
+function initHashTab() {
+  var tab = (location.hash || '').replace('#', '');
+  if (tabMeta[tab]) switchTab(tab);
+}
+
+function renderQuickPrompts() {
+  var wrap = document.getElementById('quickPrompts');
+  wrap.innerHTML = '';
+  quickPrompts.forEach(function(text) {
+    var btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = text;
+    btn.onclick = function() {
+      document.getElementById('taskInput').value = text;
+      document.getElementById('questionInput').value = text;
+      matchTask();
+    };
+    wrap.appendChild(btn);
+  });
+}
+async function loadOverview() {
+  try {
+    var overview = await fetch('/api/knowledge-org/overview').then(function(r){ return r.json(); });
+    document.getElementById('statTemplates').textContent = overview.templates || 0;
+    document.getElementById('statNodes').textContent = overview.nodes || 0;
+    document.getElementById('statTools').textContent = overview.tools || 0;
+    document.getElementById('apiStatus').textContent = 'API 已连接';
+  } catch (e) {
+    document.getElementById('apiStatus').textContent = 'API 未连接';
+  }
+}
+async function matchTask() {
+  var query = document.getElementById('taskInput').value.trim();
+  if (!query) return;
+  var payload = await fetch('/api/knowledge-org/instant-plan', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({query: query})
+  }).then(function(r){ return r.json(); });
+  taskState.payload = payload;
+  taskState.candidateNodes = payload.candidate_nodes || [];
+  taskState.selectedNodeId = taskState.candidateNodes[0] ? taskState.candidateNodes[0].id : '';
+  renderMatch(payload);
+  renderCandidateNodes(taskState.candidateNodes);
+  renderTaskSubgraph();
+  renderTaskTemplateDetail(taskState.candidateNodes[0] || null);
+}
+function renderMatch(payload) {
+  var template = payload.template || {};
+  document.getElementById('matchSummary').innerHTML = [
+    card('命中流程', template.name || '未命中', 'score: ' + (payload.score || 0)),
+    card('推荐工具', (payload.recommended_tools || []).slice(0, 6).join(', ') || '无', '仅生成可执行 GridOps 工具链')
+  ].join('');
+  var steps = payload.plan_steps || [];
+  var html = '<div class="flow-row">';
+  steps.forEach(function(step, index) {
+    var tool = step.toolName || step.tool_name || step.tool || '';
+    var mock = ['calculatePowerFlowEstimate','checkOperationRisk','generateFaultScenario'].indexOf(tool) >= 0;
+    html += '<div class="flow-card ' + (mock ? 'mock' : '') + '">' +
+      '<div class="flow-index">' + (index + 1) + '</div>' +
+      '<div class="flow-step">' + escapeHtml(step.action || step.step || '') + '</div>' +
+      '<div class="tool-pill ' + (mock ? 'mock' : '') + '">' + escapeHtml(tool || 'ANALYSIS') + '</div>' +
+      '</div>';
+  });
+  html += '</div>';
+  document.getElementById('workflowFlow').innerHTML = steps.length ? html : '<div class="empty">未生成可执行步骤</div>';
+}
+function renderCandidateNodes(nodes) {
+  var wrap = document.getElementById('candidateNodes');
+  wrap.innerHTML = '';
+  nodes.slice(0, 14).forEach(function(node) { wrap.appendChild(createNodeCard(node, 'task')); });
+  if (!wrap.innerHTML) wrap.innerHTML = '<div class="empty">暂无候选节点</div>';
+}
+function createNodeCard(node, context) {
+  var div = document.createElement('div');
+  var selected = context === 'task' ? node.id === taskState.selectedNodeId : node.id === graphState.selectedId;
+  div.className = 'node-card' + (selected ? ' selected' : '');
+  var cls = node.category === 'skill_process' ? 'skill' : node.category === 'tool_call' ? 'tool' : 'knowledge';
+  div.innerHTML = '<b>' + escapeHtml(node.name || node.id) + '</b>' +
+    '<span class="tag ' + cls + '">' + escapeHtml(node.category || '') + '</span>' +
+    '<span class="tag">' + escapeHtml(node.role || '') + '</span>' +
+    '<p>' + escapeHtml(node.description || '') + '</p>';
+  div.onclick = function() {
+    if (context === 'task') {
+      selectTaskNode(node.id);
+    } else {
+      selectGraphNode(node.id);
+    }
+  };
+  return div;
+}
+function selectTaskNode(id) {
+  taskState.selectedNodeId = id;
+  renderCandidateNodes(taskState.candidateNodes);
+  renderTaskSubgraph();
+  var node = taskState.candidateNodes.find(function(item){ return item.id === id; });
+  renderTaskTemplateDetail(node || null);
+}
+function renderTaskTemplateDetail(node) {
+  var wrap = document.getElementById('taskTemplateDetail');
+  var payload = taskState.payload || {};
+  var template = payload.template || {};
+  if (!node && !template.name) {
+    wrap.innerHTML = '<div class="empty">选择候选节点查看模板依据</div>';
+    return;
+  }
+  var steps = (template.workflow || []).slice(0, 6).map(function(step) {
+    return '<li>' + escapeHtml(step.step || step.action || '') + '</li>';
+  }).join('');
+  var nodeBlock = node ? '<p><b>当前节点</b>' + escapeHtml(node.name || node.id) + '</p><p>' + escapeHtml(node.description || '暂无节点说明') + '</p>' : '';
+  wrap.innerHTML =
+    '<b>' + escapeHtml(template.name || '未命中流程模板') + '</b>' +
+    '<span class="tag skill">' + escapeHtml(template.scene || node && node.category || 'workflow') + '</span>' +
+    '<p>' + escapeHtml(template.description || '当前节点将作为任务分析的上下文依据。') + '</p>' +
+    nodeBlock +
+    (steps ? '<ul>' + steps + '</ul>' : '') +
+    '<small>模板ID: ' + escapeHtml(template.template_id || node && node.template_id || '未关联') + '</small>';
+}
+function renderTaskSubgraph() {
+  var svg = document.getElementById('taskGraphSvg');
+  if (!svg) return;
+  bindTaskGraphInteractions();
+  svg.innerHTML = '<defs><marker id="taskArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#9eb3c4"></path></marker></defs>';
+  var viewport = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  viewport.setAttribute('id', 'taskGraphViewport');
+  svg.appendChild(viewport);
+  var nodes = taskVisibleNodes();
+  if (!nodes.length) {
+    var empty = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    empty.setAttribute('x', 450); empty.setAttribute('y', 172); empty.setAttribute('text-anchor', 'middle'); empty.setAttribute('fill', '#667382');
+    empty.textContent = '等待任务匹配';
+    viewport.appendChild(empty);
+    applyTaskGraphTransform();
+    return;
+  }
+  var ids = new Set(nodes.map(function(n){ return n.id; }));
+  var edges = graphState.edges.filter(function(e){ return ids.has(e.source) && ids.has(e.target); }).slice(0, 14);
+  var positions = taskPositions(nodes);
+  edges.forEach(function(edge) {
+    var a = positions[edge.source], b = positions[edge.target];
+    if (!a || !b) return;
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    var mid = (a.x + b.x) / 2;
+    path.setAttribute('d', 'M ' + a.x + ' ' + a.y + ' C ' + mid + ' ' + a.y + ', ' + mid + ' ' + b.y + ', ' + b.x + ' ' + b.y);
+    path.setAttribute('class', 'task-graph-edge ' + (edge.source === taskState.selectedNodeId || edge.target === taskState.selectedNodeId ? 'focus' : ''));
+    path.setAttribute('marker-end', 'url(#taskArrow)');
+    viewport.appendChild(path);
+  });
+  nodes.forEach(function(node) { drawTaskGraphNode(viewport, node, positions[node.id]); });
+  applyTaskGraphTransform();
+}
+function taskVisibleNodes() {
+  var nodes = taskState.candidateNodes.slice();
+  if (!nodes.length) return [];
+  var selected = taskState.selectedNodeId;
+  var workflows = nodes.filter(function(n){ return n.category === 'skill_process'; }).slice(0, 1);
+  var tools = nodes.filter(function(n){ return n.category === 'tool_call'; }).slice(0, 5);
+  var knowledge = nodes.filter(function(n){ return n.category === 'knowledge_entity'; }).slice(0, 3);
+  var picked = workflows.concat(tools, knowledge);
+  if (selected && !picked.some(function(n){ return n.id === selected; })) {
+    var selectedNode = nodes.find(function(n){ return n.id === selected; });
+    if (selectedNode) picked.push(selectedNode);
+  }
+  return picked.slice(0, 10);
+}
+function bindTaskGraphInteractions() {
+  var svg = document.getElementById('taskGraphSvg');
+  if (!svg || svg.dataset.bound === 'true') return;
+  svg.dataset.bound = 'true';
+  svg.addEventListener('wheel', function(event) {
+    event.preventDefault();
+    var rect = svg.getBoundingClientRect();
+    var mouseX = ((event.clientX - rect.left) / rect.width) * 900;
+    var mouseY = ((event.clientY - rect.top) / rect.height) * 340;
+    var oldZoom = taskState.zoom || 1;
+    var oldTier = zoomTier(oldZoom);
+    var nextZoom = Math.min(3.2, Math.max(0.55, oldZoom * (event.deltaY < 0 ? 1.12 : 0.89)));
+    taskState.panX = mouseX - (mouseX - taskState.panX) * (nextZoom / oldZoom);
+    taskState.panY = mouseY - (mouseY - taskState.panY) * (nextZoom / oldZoom);
+    taskState.zoom = nextZoom;
+    if (zoomTier(nextZoom) !== oldTier) {
+      renderTaskSubgraph();
+    } else {
+      applyTaskGraphTransform();
+    }
+  }, {passive: false});
+  svg.addEventListener('mousedown', function(event) {
+    taskState.dragging = true;
+    taskState.dragStartX = event.clientX;
+    taskState.dragStartY = event.clientY;
+    taskState.dragOriginX = taskState.panX;
+    taskState.dragOriginY = taskState.panY;
+  });
+  window.addEventListener('mousemove', function(event) {
+    if (!taskState.dragging) return;
+    taskState.panX = taskState.dragOriginX + (event.clientX - taskState.dragStartX) / taskState.zoom;
+    taskState.panY = taskState.dragOriginY + (event.clientY - taskState.dragStartY) / taskState.zoom;
+    applyTaskGraphTransform();
+  });
+  window.addEventListener('mouseup', function() {
+    taskState.dragging = false;
+  });
+}
+function applyTaskGraphTransform() {
+  var viewport = document.getElementById('taskGraphViewport');
+  if (!viewport) return;
+  viewport.setAttribute('transform', 'translate(' + taskState.panX + ' ' + taskState.panY + ') scale(' + taskState.zoom + ')');
+}
+function taskPositions(nodes) {
+  var groups = [
+    nodes.filter(function(n){ return n.category === 'skill_process'; }),
+    nodes.filter(function(n){ return n.category === 'tool_call'; }),
+    nodes.filter(function(n){ return n.category === 'knowledge_entity'; })
+  ];
+  var xs = [150, 450, 735];
+  var positions = {};
+  groups.forEach(function(group, gi) {
+    var gap = 270 / Math.max(group.length + 1, 2);
+    group.forEach(function(node, i) {
+      positions[node.id] = {x: xs[gi], y: 34 + gap * (i + 1)};
+    });
+  });
+  return positions;
+}
+function drawTaskGraphNode(svg, node, p) {
+  if (!p) return;
+  var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'task-graph-node');
+  var title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+  title.textContent = node.name || node.id || '';
+  g.appendChild(title);
+  var selected = node.id === taskState.selectedNodeId;
+  var color = node.category === 'skill_process' ? '#dbeafe' : node.category === 'tool_call' ? '#d7f2e8' : '#fff0df';
+  if (node.category === 'skill_process') {
+    var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', p.x - 58); rect.setAttribute('y', p.y - 17); rect.setAttribute('width', 116); rect.setAttribute('height', 34); rect.setAttribute('rx', 6); rect.setAttribute('fill', color); rect.setAttribute('stroke', selected ? '#111827' : '#fff');
+    g.appendChild(rect);
+  } else {
+    var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', p.x); circle.setAttribute('cy', p.y); circle.setAttribute('r', selected ? 18 : 15); circle.setAttribute('fill', color); circle.setAttribute('stroke', selected ? '#111827' : '#fff');
+    g.appendChild(circle);
+  }
+  var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  label.setAttribute('x', p.x); label.setAttribute('y', p.y + 3); label.setAttribute('text-anchor', 'middle'); label.setAttribute('class', 'task-graph-label');
+  label.textContent = truncate(node.name || node.id, labelLimitForZoom(node, taskState.zoom));
+  g.appendChild(label);
+  g.onclick = function() { selectTaskNode(node.id); };
+  svg.appendChild(g);
+}
+function openTaskGraph() {
+  if (taskState.candidateNodes.length) {
+    graphState.mode = 'task';
+    graphState.taskKeep = new Set(taskState.candidateNodes.map(function(node){ return node.id; }));
+    graphState.selectedId = taskState.selectedNodeId || '';
+  }
+  switchTab('graph');
+}
+function resetTask() {
+  document.getElementById('taskInput').value = '';
+  document.getElementById('matchSummary').innerHTML = '';
+  document.getElementById('workflowFlow').innerHTML = '<div class="empty">等待任务匹配</div>';
+  document.getElementById('candidateNodes').innerHTML = '<div class="empty">等待任务匹配</div>';
+  taskState.payload = null;
+  taskState.candidateNodes = [];
+  taskState.selectedNodeId = '';
+  taskState.zoom = 1;
+  taskState.panX = 0;
+  taskState.panY = 0;
+  renderTaskSubgraph();
+  renderTaskTemplateDetail(null);
+}
+
+async function loadGraph() {
+  var params = [];
+  var q = document.getElementById('graphSearch') ? document.getElementById('graphSearch').value.trim() : '';
+  if (q) params.push('q=' + encodeURIComponent(q));
+  var payload = await fetch('/api/knowledge-org/graph' + (params.length ? '?' + params.join('&') : '')).then(function(r){ return r.json(); });
+  graphState.nodes = payload.nodes || [];
+  graphState.edges = payload.edges || [];
+  if (taskState.candidateNodes.length) renderTaskSubgraph();
+  if (!q && graphState.mode === 'task') {
+    await loadTaskGraph();
+    return;
+  }
+  renderGraph();
+  renderGraphNodeList();
+}
+async function loadTaskGraph() {
+  var query = document.getElementById('taskInput').value.trim() || document.getElementById('graphSearch').value.trim();
+  if (!query) {
+    graphState.taskKeep = null;
+    graphState.selectedId = '';
+    document.getElementById('graphDetail').innerHTML = '<div class="empty">输入调度任务后，可生成当前任务相关的流程、算子和知识子图。</div>';
+    renderGraph();
+    renderGraphNodeList();
+    return;
+  }
+  var payload = await fetch('/api/knowledge-org/instant-plan', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({query: query})
+  }).then(function(r){ return r.json(); });
+  var keep = new Set((payload.candidate_nodes || []).map(function(n){ return n.id; }));
+  var steps = payload.plan_steps || [];
+  steps.forEach(function(step) {
+    var tool = step.toolName || step.tool_name || step.tool;
+    if (tool) {
+      graphState.nodes.forEach(function(node) {
+        if ((node.id || '').toLowerCase().indexOf(String(tool).toLowerCase()) >= 0 ||
+            (node.name || '').toLowerCase().indexOf(String(tool).toLowerCase()) >= 0) {
+          keep.add(node.id);
+        }
+      });
+    }
+  });
+  graphState.selectedId = '';
+  graphState.taskKeep = keep;
+  renderGraph();
+  renderGraphNodeList();
+}
+function setGraphMode(btn) {
+  graphState.mode = btn.dataset.graphMode || 'overview';
+  syncGraphModeButtons();
+  graphState.selectedId = '';
+  graphState.zoom = 1;
+  graphState.panX = 0;
+  graphState.panY = 0;
+  loadGraph();
+}
+function setGraphDepth(btn) {
+  graphState.depth = btn.dataset.graphDepth || 'core';
+  syncGraphDepthButtons();
+  graphState.selectedId = '';
+  graphState.zoom = 1;
+  graphState.panX = 0;
+  graphState.panY = 0;
+  renderGraph();
+  renderGraphNodeList();
+}
+function syncGraphModeButtons() {
+  document.querySelectorAll('[data-graph-mode]').forEach(function(item){
+    item.classList.toggle('active', item.dataset.graphMode === graphState.mode);
+  });
+}
+function syncGraphDepthButtons() {
+  document.querySelectorAll('[data-graph-depth]').forEach(function(item){
+    item.classList.toggle('active', item.dataset.graphDepth === graphState.depth);
+  });
+}
+function clearGraphSearch() {
+  document.getElementById('graphSearch').value = '';
+  graphState.selectedId = '';
+  graphState.taskKeep = null;
+  loadGraph();
+}
+function renderGraph() {
+  var svg = document.getElementById('graphSvg');
+  svg.innerHTML = '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a8b8ca"></path></marker></defs>';
+  var viewport = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  viewport.setAttribute('id', 'graphViewport');
+  svg.appendChild(viewport);
+  drawLaneLabels(viewport);
+
+  var modePayload = modeFilteredGraph();
+  var visible = prioritizedNodes(modePayload.nodes, modePayload.edges, graphState.selectedId).slice(0, nodeLimitForMode());
+  var ids = new Set(visible.map(function(n){ return n.id; }));
+  var edges = modePayload.edges.filter(function(e){ return ids.has(e.source) && ids.has(e.target); }).slice(0, edgeLimitForMode());
+  var positions = layeredPositions(visible);
+  edges.forEach(function(edge) {
+    var a = positions[edge.source], b = positions[edge.target];
+    if (!a || !b) return;
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    var mid = (a.x + b.x) / 2;
+    path.setAttribute('d', 'M ' + a.x + ' ' + a.y + ' C ' + mid + ' ' + a.y + ', ' + mid + ' ' + b.y + ', ' + b.x + ' ' + b.y);
+    path.setAttribute('class', 'edge ' + (edge.type || '') + ' ' + (edge.source === graphState.selectedId || edge.target === graphState.selectedId ? 'highlight' : ''));
+    path.setAttribute('marker-end', 'url(#arrow)');
+    viewport.appendChild(path);
+  });
+  visible.forEach(function(node) { drawGraphNode(viewport, node, positions[node.id]); });
+  applyGraphTransform();
+}
+function bindGraphInteractions() {
+  var svg = document.getElementById('graphSvg');
+  if (!svg || svg.dataset.bound === 'true') return;
+  svg.dataset.bound = 'true';
+  svg.addEventListener('wheel', function(event) {
+    event.preventDefault();
+    var rect = svg.getBoundingClientRect();
+    var mouseX = ((event.clientX - rect.left) / rect.width) * 1180;
+    var mouseY = ((event.clientY - rect.top) / rect.height) * 650;
+    var oldZoom = graphState.zoom || 1;
+    var oldTier = zoomTier(oldZoom);
+    var nextZoom = Math.min(3.2, Math.max(0.45, oldZoom * (event.deltaY < 0 ? 1.12 : 0.89)));
+    graphState.panX = mouseX - (mouseX - graphState.panX) * (nextZoom / oldZoom);
+    graphState.panY = mouseY - (mouseY - graphState.panY) * (nextZoom / oldZoom);
+    graphState.zoom = nextZoom;
+    if (zoomTier(nextZoom) !== oldTier) {
+      renderGraph();
+    } else {
+      applyGraphTransform();
+    }
+  }, {passive: false});
+  svg.addEventListener('mousedown', function(event) {
+    graphState.dragging = true;
+    graphState.dragStartX = event.clientX;
+    graphState.dragStartY = event.clientY;
+    graphState.dragOriginX = graphState.panX;
+    graphState.dragOriginY = graphState.panY;
+  });
+  window.addEventListener('mousemove', function(event) {
+    if (!graphState.dragging) return;
+    graphState.panX = graphState.dragOriginX + (event.clientX - graphState.dragStartX) / graphState.zoom;
+    graphState.panY = graphState.dragOriginY + (event.clientY - graphState.dragStartY) / graphState.zoom;
+    applyGraphTransform();
+  });
+  window.addEventListener('mouseup', function() {
+    graphState.dragging = false;
+  });
+}
+function applyGraphTransform() {
+  var viewport = document.getElementById('graphViewport');
+  if (!viewport) return;
+  viewport.setAttribute('transform', 'translate(' + graphState.panX + ' ' + graphState.panY + ') scale(' + graphState.zoom + ')');
+}
+function resetGraphView() {
+  graphState.zoom = 1;
+  graphState.panX = 0;
+  graphState.panY = 0;
+  graphState.selectedId = '';
+  graphState.taskKeep = null;
+  renderGraph();
+  renderGraphNodeList();
+  document.getElementById('graphDetail').innerHTML = '<div class="empty">点击节点查看描述、类型和关联能力。</div>';
+}
+function drawLaneLabels(svg) {
+  [
+    {x: 135, label: '业务流程'},
+    {x: 505, label: '工具/算子'},
+    {x: 870, label: '知识/数据/规则'}
+  ].forEach(function(lane) {
+    var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', lane.x);
+    text.setAttribute('y', 38);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('class', 'graph-lane-label');
+    text.textContent = lane.label;
+    svg.appendChild(text);
+    var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', lane.x + 155);
+    line.setAttribute('x2', lane.x + 155);
+    line.setAttribute('y1', 58);
+    line.setAttribute('y2', 620);
+    line.setAttribute('class', 'graph-lane-line');
+    svg.appendChild(line);
+  });
+}
+function modeFilteredGraph() {
+  var nodes = graphState.nodes.slice();
+  var edges = graphState.edges.slice();
+  if (graphState.mode === 'workflow') {
+    edges = edges.filter(function(e){ return e.type === 'orchestrates'; });
+    nodes = nodesForEdges(edges, nodes, function(n){ return n.category === 'skill_process' || n.category === 'tool_call'; });
+  } else if (graphState.mode === 'tooling') {
+    edges = edges.filter(function(e){ return e.type === 'contains' || e.type === 'depends_on' || e.type === 'supports' || e.type === 'checks'; });
+    nodes = nodesForEdges(edges, nodes, function(n){ return n.category === 'tool_call' || n.category === 'knowledge_entity'; });
+  } else if (graphState.mode === 'governance') {
+    edges = edges.filter(function(e){ return e.type === 'constrains' || e.type === 'retrieves' || e.type === 'mentions'; });
+    nodes = nodesForEdges(edges, nodes, function(n){ return n.category === 'skill_process' || n.category === 'knowledge_entity'; });
+  } else if (graphState.mode === 'task') {
+    if (!graphState.taskKeep) return {nodes: [], edges: []};
+    nodes = nodes.filter(function(n){ return graphState.taskKeep.has(n.id); });
+    var ids = new Set(nodes.map(function(n){ return n.id; }));
+    edges = edges.filter(function(e){ return ids.has(e.source) && ids.has(e.target); });
+  } else {
+    edges = edges.filter(function(e){ return e.type === 'orchestrates' || e.type === 'contains' || e.type === 'depends_on' || e.type === 'constrains'; });
+  }
+  if (graphState.selectedId) {
+    var related = new Set([graphState.selectedId]);
+    edges.forEach(function(e) {
+      if (e.source === graphState.selectedId) related.add(e.target);
+      if (e.target === graphState.selectedId) related.add(e.source);
+    });
+    nodes = nodes.filter(function(n){ return related.has(n.id); });
+    edges = edges.filter(function(e){ return related.has(e.source) && related.has(e.target); });
+  }
+  if (graphState.depth === 'core' && !graphState.selectedId) {
+    var core = coreGraph(nodes, edges);
+    nodes = core.nodes;
+    edges = core.edges;
+  } else if (graphState.depth === 'expanded' && !graphState.selectedId) {
+    var expanded = expandedGraph(nodes, edges);
+    nodes = expanded.nodes;
+    edges = expanded.edges;
+  }
+  return {nodes: nodes, edges: edges};
+}
+function coreGraph(nodes, edges) {
+  var workflow = nodes.filter(function(n){ return n.category === 'skill_process'; }).slice(0, graphState.mode === 'overview' ? 12 : 12);
+  var connected = new Set(workflow.map(function(n){ return n.id; }));
+  edges.forEach(function(e) {
+    if (connected.has(e.source)) connected.add(e.target);
+    if (connected.has(e.target)) connected.add(e.source);
+  });
+  var tools = nodes.filter(function(n){ return connected.has(n.id) && n.category === 'tool_call'; }).slice(0, graphState.mode === 'overview' ? 32 : 18);
+  var knowledge = nodes.filter(function(n){ return connected.has(n.id) && n.category === 'knowledge_entity'; }).slice(0, graphState.mode === 'overview' ? 24 : 12);
+  var picked = workflow.concat(tools, knowledge);
+  var ids = new Set(picked.map(function(n){ return n.id; }));
+  return {nodes: picked, edges: edges.filter(function(e){ return ids.has(e.source) && ids.has(e.target); })};
+}
+function expandedGraph(nodes, edges) {
+  var workflow = nodes.filter(function(n){ return n.category === 'skill_process'; }).slice(0, 12);
+  var tools = nodes.filter(function(n){ return n.category === 'tool_call'; }).slice(0, 34);
+  var knowledge = nodes.filter(function(n){ return n.category === 'knowledge_entity'; }).slice(0, 24);
+  var picked = workflow.concat(tools, knowledge);
+  var ids = new Set(picked.map(function(n){ return n.id; }));
+  return {nodes: picked, edges: edges.filter(function(e){ return ids.has(e.source) && ids.has(e.target); })};
+}
+function nodesForEdges(edges, allNodes, includePredicate) {
+  var ids = new Set();
+  edges.forEach(function(e){ ids.add(e.source); ids.add(e.target); });
+  return allNodes.filter(function(n){ return ids.has(n.id) && includePredicate(n); });
+}
+function nodeLimitForMode() {
+  if (graphState.depth === 'core') return graphState.mode === 'overview' ? 72 : 46;
+  if (graphState.depth === 'expanded') return graphState.mode === 'overview' ? 70 : 86;
+  return graphState.mode === 'overview' ? 110 : 140;
+}
+function edgeLimitForMode() {
+  if (graphState.depth === 'core') return graphState.mode === 'overview' ? 120 : 72;
+  if (graphState.depth === 'expanded') return graphState.mode === 'overview' ? 110 : 140;
+  return graphState.mode === 'overview' ? 170 : 220;
+}
+function prioritizedNodes(nodes, edges, selectedId) {
+  if (!selectedId) return nodes;
+  var related = new Set([selectedId]);
+  edges.forEach(function(e) {
+    if (e.source === selectedId) related.add(e.target);
+    if (e.target === selectedId) related.add(e.source);
+  });
+  var selectedFirst = nodes.filter(function(n){ return related.has(n.id); });
+  var rest = nodes.filter(function(n){ return !related.has(n.id); });
+  return selectedFirst.concat(rest);
+}
+function layeredPositions(nodes) {
+  var groups = [
+    nodes.filter(function(n){ return n.category === 'skill_process'; }),
+    nodes.filter(function(n){ return n.category === 'tool_call'; }),
+    nodes.filter(function(n){ return n.category === 'knowledge_entity'; }),
+    nodes.filter(function(n){ return ['skill_process','tool_call','knowledge_entity'].indexOf(n.category) < 0; })
+  ];
+  var xs = [135, 505, 870, 1070];
+  var positions = {};
+  groups.forEach(function(group, gi) {
+    var columns = Math.max(1, Math.ceil(group.length / 18));
+    var gap = 540 / Math.max(Math.ceil(group.length / columns) + 1, 2);
+    group.forEach(function(node, i) {
+      var col = Math.floor(i / 18);
+      var row = i % 18;
+      positions[node.id] = {x: xs[gi] + col * 95, y: 58 + gap * (row + 1)};
+    });
+  });
+  return positions;
+}
+function drawGraphNode(svg, node, p) {
+  if (!p) return;
+  var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'graph-node');
+  var title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+  title.textContent = node.name || node.id || '';
+  g.appendChild(title);
+  var selected = node.id === graphState.selectedId;
+  var color = node.category === 'skill_process' ? '#dbeafe' : node.category === 'tool_call' ? '#d7f2e8' : '#fff0df';
+  if (node.category === 'skill_process') {
+    var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', p.x - 56); rect.setAttribute('y', p.y - 17); rect.setAttribute('width', 112); rect.setAttribute('height', 34); rect.setAttribute('rx', 6); rect.setAttribute('fill', color); rect.setAttribute('stroke', selected ? '#111827' : '#fff'); g.appendChild(rect);
+  } else {
+    var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', p.x); circle.setAttribute('cy', p.y); circle.setAttribute('r', selected ? 18 : 15); circle.setAttribute('fill', color); circle.setAttribute('stroke', selected ? '#111827' : '#fff'); g.appendChild(circle);
+  }
+  var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  label.setAttribute('x', p.x); label.setAttribute('y', p.y + 2); label.setAttribute('text-anchor', 'middle'); label.setAttribute('class', 'graph-label');
+  label.textContent = truncate(node.name || node.id, labelLimitForZoom(node, graphState.zoom));
+  g.appendChild(label);
+  var sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  sub.setAttribute('x', p.x); sub.setAttribute('y', p.y + (node.category === 'skill_process' ? 13 : 25)); sub.setAttribute('text-anchor', 'middle'); sub.setAttribute('class', 'graph-sub');
+  sub.textContent = node.category || '';
+  g.appendChild(sub);
+  g.onclick = function() { selectGraphNode(node.id); };
+  svg.appendChild(g);
+}
+function renderGraphNodeList() {
+  var wrap = document.getElementById('graphNodeList');
+  wrap.innerHTML = '';
+  modeFilteredGraph().nodes.slice(0, 72).forEach(function(node) { wrap.appendChild(createNodeCard(node)); });
+  if (!wrap.innerHTML) wrap.innerHTML = '<div class="empty">暂无节点</div>';
+}
+function selectGraphNode(id) {
+  graphState.selectedId = id;
+  var node = graphState.nodes.find(function(n){ return n.id === id; });
+  if (!node) return;
+  document.getElementById('graphDetail').innerHTML = '<b>' + escapeHtml(node.name || node.id) + '</b>' +
+    '<span class="tag">' + escapeHtml(node.category || '') + '</span><span class="tag">' + escapeHtml(node.role || '') + '</span>' +
+    '<p>' + escapeHtml(node.description || '暂无描述') + '</p><small>ID: ' + escapeHtml(node.id) + '</small>';
+  renderGraph();
+  renderGraphNodeList();
+}
+
+function updateButtonState(disabled) {
+  document.getElementById('sendBtn').disabled = disabled;
+  document.getElementById('diagnoseBtn').disabled = disabled;
+}
+function addMessage(content, isUser) {
+  var c = document.getElementById('messages');
+  var empty = c.querySelector('.empty');
+  if (empty) empty.remove();
+  var div = document.createElement('div');
+  div.className = 'message ' + (isUser ? 'user-message' : 'ai-message');
+  div.textContent = content;
+  c.appendChild(div);
+  c.scrollTop = c.scrollHeight;
+}
+function addTypingIndicator() {
+  addMessage('处理中...', false);
+  var items = document.querySelectorAll('.ai-message');
+  items[items.length - 1].id = 'typing';
+}
+function removeTypingIndicator() {
+  var t = document.getElementById('typing');
+  if (t) t.remove();
+}
+function askQuick(text) {
+  switchTab('chat');
+  document.getElementById('questionInput').value = text;
+  sendMessage();
+}
+function createTraceView(title) {
+  var msgDiv = document.createElement('div');
+  msgDiv.className = 'message ai-message';
+  var stepsDiv = document.createElement('div');
+  stepsDiv.className = 'stream-steps';
+  var header = document.createElement('div');
+  header.className = 'trace-header';
+  header.innerHTML = '<span class="trace-title">' + escapeHtml(title || '执行轨迹') + '</span>' +
+    '<span class="trace-state"><i class="trace-pulse"></i><span>运行中</span></span>';
+  var active = document.createElement('div');
+  active.className = 'trace-active';
+  var archive = document.createElement('details');
+  archive.className = 'trace-archive';
+  var archiveSummary = document.createElement('summary');
+  archiveSummary.textContent = '执行过程 0 步';
+  var list = document.createElement('div');
+  list.className = 'trace-list';
+  archive.appendChild(archiveSummary);
+  archive.appendChild(list);
+  stepsDiv.appendChild(header);
+  stepsDiv.appendChild(active);
+  stepsDiv.appendChild(archive);
+  var contentDiv = document.createElement('div');
+  contentDiv.className = 'final-answer';
+  msgDiv.appendChild(stepsDiv);
+  msgDiv.appendChild(contentDiv);
+  document.getElementById('messages').appendChild(msgDiv);
+  return {msgDiv: msgDiv, stepsDiv: stepsDiv, active: active, archive: archive, archiveSummary: archiveSummary, list: list, contentDiv: contentDiv, header: header, count: 0, archivedCount: 0, activeItem: null};
+}
+function setTraceState(trace, label, done) {
+  var state = trace.header.querySelector('.trace-state');
+  if (!state) return;
+  state.classList.toggle('done', !!done);
+  state.querySelector('span').textContent = label;
+}
+function appendTraceStatus(trace, text) {
+  archiveActiveTraceItem(trace);
+  var item = document.createElement('details');
+  item.className = 'trace-item status';
+  item.open = true;
+  item.innerHTML = '<summary><span class="trace-spinner"></span><span class="trace-node">' + escapeHtml(text) + '</span><span class="trace-badge">status</span></summary>';
+  trace.active.appendChild(item);
+  trace.activeItem = item;
+  scrollMessages();
+}
+function appendTraceStep(trace, rawData) {
+  archiveActiveTraceItem(trace);
+  var step = parseMaybeJson(rawData);
+  trace.count += 1;
+  var node = step.node || 'node';
+  var agent = step.agent || inferAgentName(step);
+  var meta = summarizeStep(step);
+  var detailHtml = buildTraceDetail(step);
+  var item = document.createElement('details');
+  item.className = 'trace-item done';
+  item.open = true;
+  item.innerHTML =
+    '<summary><span class="trace-spinner"></span><span><span class="trace-node">' + escapeHtml(node) + '</span>' +
+    '<span class="trace-meta">' + escapeHtml(meta) + '</span></span><span class="trace-badge">' + escapeHtml(agent) + '</span></summary>' +
+    '<div class="trace-detail">' + detailHtml + '</div>';
+  trace.active.appendChild(item);
+  trace.activeItem = item;
+  scrollMessages();
+}
+function archiveActiveTraceItem(trace) {
+  if (!trace.activeItem) return;
+  trace.activeItem.open = false;
+  trace.activeItem.classList.add('done');
+  var badge = trace.activeItem.querySelector('.trace-badge');
+  if (badge && trace.activeItem.classList.contains('status')) badge.textContent = 'done';
+  trace.list.appendChild(trace.activeItem);
+  trace.archivedCount += 1;
+  updateArchiveSummary(trace, false);
+  trace.activeItem = null;
+}
+function updateArchiveSummary(trace, done) {
+  var activeText = trace.activeItem ? '，当前步骤运行中' : '';
+  trace.archiveSummary.textContent = (done ? '执行过程 ' : '已完成步骤 ') + trace.archivedCount + ' 步' + activeText;
+}
+function parseMaybeJson(data) {
+  if (!data) return {};
+  if (typeof data === 'object') return data;
+  try { return JSON.parse(data); } catch (e) { return {message: data}; }
+}
+function inferAgentName(step) {
+  var node = String(step.node || '').toLowerCase();
+  if (node.indexOf('pre_check') >= 0) return 'PreCheck';
+  if (node.indexOf('context') >= 0) return 'Context';
+  if (node.indexOf('router') >= 0) return 'Router';
+  if (node.indexOf('entity') >= 0) return 'Entity';
+  if (node.indexOf('rag') >= 0) return 'RAG';
+  if (node.indexOf('planner') >= 0 || node === 'planner') return 'Planner';
+  if (node.indexOf('executor') >= 0 || node.indexOf('tool') >= 0) return 'ToolAgent';
+  if (node.indexOf('evidence') >= 0) return 'Validator';
+  if (node.indexOf('replanner') >= 0) return 'Replanner';
+  if (node.indexOf('recommend') >= 0) return 'Recommender';
+  if (node.indexOf('safety') >= 0) return 'Safety';
+  if (node.indexOf('final') >= 0) return 'Writer';
+  if (node.indexOf('memory') >= 0) return 'Memory';
+  return step.node_category || 'Agent';
+}
+function summarizeStep(step) {
+  var info = [];
+  var node = String(step.node || '').toLowerCase();
+  if (node.indexOf('router') >= 0 && step.intent) info.push('路由到 ' + step.intent);
+  if (node.indexOf('context') >= 0 && step.workflow_context) info.push('装载流程与图谱上下文');
+  if (node.indexOf('rag') >= 0 && step.rag_results) info.push('召回 ' + asArray(step.rag_results).length + ' 条知识');
+  if ((node.indexOf('planner') >= 0 || node === 'planner') && step.plan_steps) info.push('生成 ' + asArray(step.plan_steps).length + ' 步计划');
+  if ((node.indexOf('executor') >= 0 || node.indexOf('tool') >= 0) && step.step_results) info.push('完成 ' + asArray(step.step_results).length + ' 条工具结果');
+  if (node.indexOf('evidence') >= 0) info.push('校验证据覆盖');
+  if (node.indexOf('recommend') >= 0) info.push('生成处置建议');
+  if (node.indexOf('safety') >= 0) info.push('执行安全复核');
+  if (node.indexOf('final') >= 0) info.push('组织最终回答');
+  if (!info.length && step.intent) info.push('意图 ' + step.intent);
+  if (step.elapsed_ms !== undefined) info.push(formatElapsed(step.elapsed_ms));
+  return info.join(' · ') || '节点执行完成';
+}
+function buildTraceDetail(step) {
+  var tags = [];
+  ['trace_id','sequence','status','node_category','intent','risk_level','review_decision','next_action','evidence_score','evidence_coverage','loop_count','elapsed_ms'].forEach(function(key) {
+    if (step[key] !== undefined && step[key] !== null) tags.push('<span class="tag">' + escapeHtml(key + ': ' + compactValue(step[key])) + '</span>');
+  });
+  var sections = [];
+  if (tags.length) sections.push('<div class="trace-kv">' + tags.join('') + '</div>');
+  if (step.plan_steps) sections.push('<b>执行计划</b>' + renderCompactList(step.plan_steps, formatPlanStep));
+  if (step.step_results) sections.push('<b>工具返回</b>' + renderCompactList(step.step_results, formatStepResult));
+  if (step.rag_results) sections.push('<b>知识召回</b>' + renderCompactList(step.rag_results, formatEvidence));
+  if (step.workflow_context) sections.push('<b>流程上下文</b>' + renderTraceRaw(step.workflow_context, summarizeContext(step.workflow_context)));
+  if (step.entities) sections.push('<b>识别实体</b>' + renderTraceRaw(step.entities, compactValue(step.entities)));
+  if (!sections.length) sections.push(renderTraceRaw(step, '节点状态已记录'));
+  return sections.join('');
+}
+function renderCompactList(value, formatter) {
+  var arr = asArray(value);
+  if (!arr.length) return '<pre class="trace-json">' + escapeHtml(prettyJson(value)) + '</pre>';
+  return '<div class="route-stack">' + arr.slice(0, 8).map(function(item, index) {
+    return '<div class="route-card"><b>' + escapeHtml(formatter(item, index)) + '</b><small>' + escapeHtml(compactValue(item)) + '</small></div>';
+  }).join('') + '</div>';
+}
+function formatPlanStep(step, index) {
+  return (index + 1) + '. ' + (step.action || step.step || step.stepId || '计划步骤') + (step.toolName || step.tool ? ' / ' + (step.toolName || step.tool) : '');
+}
+function formatStepResult(result, index) {
+  return (index + 1) + '. ' + (result.stepId || result.toolName || result.tool || result.status || '工具结果');
+}
+function formatEvidence(item, index) {
+  return (index + 1) + '. ' + (item.title || item.documentName || item.source || item.id || '证据片段');
+}
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === 'object') return Object.values(value);
+  return [];
+}
+function compactValue(value) {
+  if (value == null) return '';
+  if (typeof value === 'string') return truncate(value, 180);
+  return truncate(JSON.stringify(value), 220);
+}
+function prettyJson(value) {
+  try { return typeof value === 'string' ? value : JSON.stringify(value, null, 2); } catch (e) { return String(value); }
+}
+function renderTraceRaw(value, summary) {
+  return '<details class="trace-raw"><summary>' + escapeHtml(summary || '查看原始数据') + '</summary><pre class="trace-json">' + escapeHtml(prettyJson(value)) + '</pre></details>';
+}
+function summarizeContext(value) {
+  if (!value) return '查看流程上下文';
+  if (typeof value === 'string') return truncate(value, 120);
+  var parts = [];
+  if (value.template) parts.push('模板: ' + (value.template.name || value.template.template_id || '已匹配'));
+  if (value.recommended_tools) parts.push('工具: ' + asArray(value.recommended_tools).slice(0, 3).join(', '));
+  if (value.candidate_nodes) parts.push('节点: ' + asArray(value.candidate_nodes).length + ' 个');
+  return parts.length ? parts.join(' · ') : '查看流程上下文';
+}
+function finishTrace(trace, label) {
+  setTraceState(trace, label || '已完成，可展开溯源', true);
+  archiveActiveTraceItem(trace);
+  trace.list.querySelectorAll('.trace-item').forEach(function(item) {
+    item.classList.add('done');
+    item.open = false;
+    var badge = item.querySelector('.trace-badge');
+    if (badge && item.classList.contains('status')) badge.textContent = 'done';
+  });
+  trace.activeItem = null;
+  trace.archive.open = false;
+  updateArchiveSummary(trace, true);
+}
+function formatElapsed(ms) {
+  ms = Number(ms) || 0;
+  return ms < 1000 ? ms + 'ms' : (ms / 1000).toFixed(1) + 's';
+}
+function scrollMessages() {
+  var c = document.getElementById('messages');
+  c.scrollTop = c.scrollHeight;
+}
+async function sendMessage() {
+  var input = document.getElementById('questionInput');
+  var question = input.value.trim();
+  if (!question || isProcessing) return;
+  isProcessing = true;
+  input.value = '';
+  updateButtonState(true);
+  addMessage(question, true);
+  addTypingIndicator();
+  try {
+    removeTypingIndicator();
+    var trace = createTraceView('Agent 执行轨迹');
+    var resp = await fetch('/api/chat/stream-graph', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({sessionId: sessionId, question: question})
+    });
+    await parseSSEStream(resp, {
+      status: function(data) { appendTraceStatus(trace, data); },
+      step: function(data) { appendTraceStep(trace, data); },
+      result: function(data) { trace.contentDiv.textContent = data; finishTrace(trace, '已生成，可展开溯源'); },
+      error: function(data) { trace.contentDiv.textContent = '错误: ' + data; finishTrace(trace, '执行失败'); },
+      done: function() { finishTrace(trace, '已完成，可展开溯源'); }
+    });
+  } catch (err) {
+    removeTypingIndicator();
+    addMessage('请求失败: ' + err.message, false);
+  } finally {
+    isProcessing = false;
+    updateButtonState(false);
+  }
+}
+async function submitAlarm() {
+  var deviceId = document.getElementById('alarmDeviceId').value.trim();
+  var alarmType = document.getElementById('alarmType').value.trim();
+  if (!deviceId || !alarmType) { alert('请填写设备编号和告警类型'); return; }
+  var parts = (document.getElementById('alarmValue').value || '').split('/');
+  var evt = {
+    deviceId: deviceId,
+    deviceName: deviceId,
+    deviceType: document.getElementById('alarmDeviceType').value || '电力设备',
+    alarmType: alarmType,
+    alarmLevel: document.getElementById('alarmLevel').value || '严重',
+    currentValue: parts[0] || '',
+    threshold: parts[1] || '',
+    station: 'XX变电站'
+  };
+  try {
+    var rr = await fetch('/api/alarm/receive', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(evt) });
+    var rd = await rr.json();
+    addMessage('[告警接收] ' + alarmType + ' - ' + deviceId, true);
+    startDiagnosisWithTask(rd.taskId, document.getElementById('alarmDescription').value.trim() || JSON.stringify(evt));
+  } catch (err) {
+    addMessage('告警提交失败: ' + err.message, false);
+  }
+}
+function startDiagnosis() {
+  var input = document.getElementById('questionInput');
+  var desc = input.value.trim() || document.getElementById('taskInput').value.trim() || '请执行告警诊断并给出处置建议';
+  input.value = '';
+  startDiagnosisWithTask(null, desc);
+}
+async function startDiagnosisWithTask(taskId, desc) {
+  if (isProcessing) return;
+  isProcessing = true;
+  updateButtonState(true);
+  addMessage('[诊断请求] ' + desc, true);
+  addTypingIndicator();
+  try {
+    removeTypingIndicator();
+    var trace = createTraceView('诊断执行轨迹');
+    var resp = await fetch('/api/alarm/diagnose', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({taskId: taskId, alarmDescription: desc})
+    });
+    await parseSSEStream(resp, {
+      status: function(data) { appendTraceStatus(trace, data); },
+      step: function(data) { appendTraceStep(trace, data); },
+      result: function(data) { trace.contentDiv.textContent = data; finishTrace(trace, '已生成，可展开溯源'); },
+      error: function(data) { trace.contentDiv.textContent = '错误: ' + data; finishTrace(trace, '执行失败'); },
+      done: function() { finishTrace(trace, '已完成，可展开溯源'); }
+    });
+  } catch (err) {
+    removeTypingIndicator();
+    addMessage('诊断失败: ' + err.message, false);
+  } finally {
+    isProcessing = false;
+    updateButtonState(false);
+  }
+}
+function clearSession() {
+  var old = sessionId;
+  sessionId = generateSessionId();
+  localStorage.setItem('gridops_sessionId', sessionId);
+  fetch('/api/chat/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({sessionId: old}) }).catch(function(){});
+  document.getElementById('messages').innerHTML = '<div class="empty">会话已清空</div>';
+}
+async function loadHistory() {
+  try {
+    var data = await fetch('/api/chat/history?sessionId=' + encodeURIComponent(sessionId)).then(function(r){ return r.json(); });
+    if (data.messages && data.messages.length) {
+      document.getElementById('messages').innerHTML = '';
+      data.messages.forEach(function(msg){ addMessage(msg.content, msg.role === 'user'); });
+    }
+  } catch(e) {}
+}
+
+async function uploadDocument() {
+  var file = document.getElementById('docFile').files[0];
+  if (!file) { alert('请选择文件'); return; }
+  var fd = new FormData();
+  fd.append('file', file);
+  fd.append('documentType', document.getElementById('docType').value);
+  fd.append('source', document.getElementById('docSource').value || 'dashboard-upload');
+  fd.append('description', document.getElementById('docDescription').value);
+  fd.append('tags', document.getElementById('docTags').value);
+  document.getElementById('uploadResult').textContent = 'Uploading...';
+  try {
+    var data = await fetch('/api/knowledge/documents/upload', { method: 'POST', body: fd }).then(function(r){ return r.json(); });
+    document.getElementById('uploadResult').textContent = data.error || ('Upload success: ' + (data.documentName || data.documentId || ''));
+    loadDocuments();
+  } catch (e) {
+    document.getElementById('uploadResult').textContent = 'Upload failed: ' + e.message;
+  }
+}
+async function loadDocuments() {
+  try {
+    var data = await fetch('/api/knowledge/documents?page=1&size=100').then(function(r){ return r.json(); });
+    var rows = document.getElementById('docRows');
+    rows.innerHTML = '';
+    (data.documents || []).forEach(function(doc) {
+      var tr = document.createElement('tr');
+      var nameCell = document.createElement('td');
+      nameCell.textContent = doc.documentName || doc.document_id || '';
+      var typeCell = document.createElement('td');
+      typeCell.textContent = doc.documentType || '';
+      var statusCell = document.createElement('td');
+      statusCell.textContent = doc.status || '';
+      var chunkCell = document.createElement('td');
+      chunkCell.textContent = doc.chunkCount || 0;
+      var actionCell = document.createElement('td');
+      var statusButton = document.createElement('button');
+      statusButton.className = 'secondary';
+      statusButton.textContent = 'Status';
+      statusButton.onclick = function() { checkDocStatus(doc.documentId || ''); };
+      actionCell.appendChild(statusButton);
+      tr.appendChild(nameCell);
+      tr.appendChild(typeCell);
+      tr.appendChild(statusCell);
+      tr.appendChild(chunkCell);
+      tr.appendChild(actionCell);
+      rows.appendChild(tr);
+    });
+    if (!rows.innerHTML) rows.innerHTML = '<tr><td colspan="5">No documents</td></tr>';
+  } catch (e) {
+    document.getElementById('docRows').innerHTML = '<tr><td colspan="5">Load failed: ' + escapeHtml(e.message) + '</td></tr>';
+  }
+}
+async function checkDocStatus(id) {
+  if (!id) return;
+  var data = await fetch('/api/knowledge/documents/' + encodeURIComponent(id) + '/status').then(function(r){ return r.json(); });
+  alert(JSON.stringify(data, null, 2));
+}
+async function testKnowledgeSearch() {
+  var query = document.getElementById('searchQuery').value.trim();
+  if (!query) return;
+  var wrap = document.getElementById('searchResults');
+  wrap.innerHTML = '<div class="empty">检索中...</div>';
+  try {
+    var data = await fetch('/api/knowledge/search/test', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: query, topK: 5})
+    }).then(function(r){ return r.json(); });
+    wrap.innerHTML = '';
+    (data.results || []).forEach(function(item) {
+      var div = document.createElement('div');
+      div.className = 'node-card';
+      div.innerHTML = '<b>' + escapeHtml(item.documentName || item.documentId || '检索结果') + '</b><p>' + escapeHtml(item.content || item.text || JSON.stringify(item).slice(0, 300)) + '</p>';
+      wrap.appendChild(div);
+    });
+    if (!wrap.innerHTML) wrap.innerHTML = '<div class="empty">暂无结果</div>';
+  } catch (e) {
+    wrap.innerHTML = '<div class="empty">检索失败：' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+document.getElementById('questionInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+document.getElementById('questionInput').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+});
+
+renderQuickPrompts();
+loadOverview();
+loadGraph();
+loadHistory();
+loadDocuments();
+matchTask();
+initHashTab();
+</script>
+</body>
+</html>

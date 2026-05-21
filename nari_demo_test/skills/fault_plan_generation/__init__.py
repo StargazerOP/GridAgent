@@ -1,0 +1,2 @@
+"""Fault plan generation skill."""
+

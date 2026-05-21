@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridOpsAgent 流式测试</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Microsoft YaHei', sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { color: #00d4ff; margin-bottom: 20px; font-size: 22px; }
+  .controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+  .controls select, .controls button, .controls input { padding: 8px 14px; border-radius: 6px; border: 1px solid #333; font-size: 14px; }
+  .controls select, .controls input { background: #16213e; color: #eee; }
+  .controls button { background: #00d4ff; color: #000; font-weight: bold; cursor: pointer; border: none; }
+  .controls button:hover { background: #00b8e6; }
+  .controls button.stop { background: #e74c3c; color: #fff; }
+  .controls input { flex: 1; min-width: 250px; }
+  #output { background: #0f0f1a; border-radius: 8px; padding: 16px; min-height: 400px; max-height: 70vh; overflow-y: auto; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+  .event-status { color: #f39c12; }
+  .event-step { color: #2ecc71; }
+  .event-result { color: #00d4ff; font-weight: bold; }
+  .event-error { color: #e74c3c; }
+  .event-done { color: #888; }
+  .divider { border-top: 1px dashed #333; margin: 8px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>GridOpsAgent 流式输出测试</h1>
+  <div class="controls">
+    <select id="endpoint">
+      <option value="/api/alarm/diagnose">告警诊断流式</option>
+      <option value="/api/chat/stream-graph">Graph 对话流式</option>
+      <option value="/api/chat/stream">RAG 对话流式</option>
+    </select>
+    <input id="question" value="TR-110KV-001 oil temperature 86C over 80C threshold, diagnose" placeholder="输入问题...">
+    <button id="sendBtn" onclick="startStream()">发送</button>
+    <button class="stop" onclick="stopStream()">停止</button>
+  </div>
+  <div id="output">等待请求...</div>
+</div>
+
+<script>
+let eventSource = null;
+
+function startStream() {
+  const endpoint = document.getElementById('endpoint').value;
+  const question = document.getElementById('question').value;
+  const output = document.getElementById('output');
+  const url = 'http://localhost:9900' + endpoint;
+
+  if (eventSource) eventSource.close();
+  output.innerHTML = '';
+
+  const bodyKey = endpoint.includes('diagnose') ? 'alarmDescription' : 'question';
+  const payload = {};
+  payload[bodyKey] = question;
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(response => {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    function read() {
+      reader.read().then(({done, value}) => {
+        if (done) {
+          appendLine('', 'divider');
+          appendLine('[连接关闭]', 'event-done');
+          return;
+        }
+        buffer += decoder.decode(value, {stream: true});
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        let currentEvent = '';
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            currentEvent = line.substring(6).trim();
+          } else if (line.startsWith('data:')) {
+            const data = line.substring(5).trim();
+            if (data) {
+              appendLine(data, 'event-' + currentEvent);
+            }
+          } else if (line === '') {
+            appendLine('---', 'divider');
+          }
+        }
+        read();
+      });
+    }
+    read();
+  }).catch(err => {
+    appendLine('连接失败: ' + err.message, 'event-error');
+  });
+}
+
+function appendLine(text, className) {
+  const output = document.getElementById('output');
+  const div = document.createElement('div');
+  div.className = className || '';
+  div.textContent = className === 'divider' ? '─'.repeat(60) : text;
+  output.appendChild(div);
+  output.scrollTop = output.scrollHeight;
+}
+
+function stopStream() {
+  if (eventSource) { eventSource.close(); eventSource = null; }
+}
+</script>
+</body>
+</html>

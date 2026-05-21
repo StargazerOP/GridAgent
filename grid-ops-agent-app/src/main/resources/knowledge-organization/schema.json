@@ -1,0 +1,45 @@
+{
+  "node_categories": {
+    "skill_process": "面向典型电网分析决策任务沉淀的形式化、规模化、模板化处理流程，与工作流模板文件保持一一对应。",
+    "tool_call": "可以被智能体检索、选择和调用的能力节点，包括机理工具、数据驱动模型工具和工程工具。工程工具下包含对齐真实数据资产的数据查询工具大类。",
+    "knowledge_entity": "设备、线路、厂站、数据资产、调度规程、运行规则、专家经验、历史案例、处置原则和风险偏好等对象、规则、经验与解释依据。"
+  },
+  "tool_subtypes": {
+    "mechanism_tool_group": "机理工具总类，用于组织机理模型工具、机理算子大类和具体机理算子。",
+    "mechanism_operator_group": "机理算子大类，用于组织潮流计算、稳定计算、时间序列预测、空间特征分析、故障场景生成和机组组合优化等可调用算子。",
+    "mechanism_operator": "可被工作流像工具一样选择和调用的机理算子节点；其中 operator_level=family 表示树中的算子大类，operator_level=leaf 表示从 nari_mechanism_data_knowledge_tree.txt 展开的具体叶子算子。",
+    "mechanism_model_tool": "来自课题2或可替换机理接口的潮流计算、稳定分析、优化决策、安全校核等机理模型工具。",
+    "data_driven_model_tool_group": "数据驱动模型工具总类，用于组织由运行数据、仿真数据或外部环境数据驱动的预测、估计和风险识别能力。",
+    "data_driven_model_tool": "气象预测、新能源出力预测、潮流快速估计、状态预测和风险识别等数据驱动模型工具。",
+    "engineering_tool_group": "工程工具总类，用于组织查询、检索、图谱访问、槽位解析、报告生成等工程支撑能力。",
+    "data_query_tool_group": "工程工具下的数据查询大类，对齐真实数据资产目录，当前先注册可调用入口，不展开具体表头。",
+    "data_query_tool": "面向元数据、台账、量测、气象、计划检修、保护故障和仿真参数等真实数据资产的查询工具。",
+    "engineering_tool": "槽位解析、拓扑分析、向量检索、预案召回、调规检索、报告生成等普通工程工具。"
+  },
+  "node_roles": [
+    "workflow",
+    "tool_group",
+    "operator_group",
+    "operator",
+    "model_tool",
+    "engineering_tool",
+    "data_asset",
+    "entity",
+    "document",
+    "rule",
+    "experience",
+    "case"
+  ],
+  "edge_types": {
+    "orchestrates": "流程牵引工具调用节点，规定调用顺序、输入输出衔接和校核逻辑。",
+    "contains": "工具大类或算子大类包含下级工具、算子或工具分组。",
+    "depends_on": "工具调用节点依赖知识实体、数据资产、规则、对象或参数来源。",
+    "constrains": "知识实体节点约束流程节点，影响流程选择、结果解释、风险提示和人工复核条件。",
+    "supports": "知识实体节点、工具调用节点或流程节点为其他节点提供支撑。",
+    "retrieves": "检索工具召回文档、规则、案例或知识片段。",
+    "mentions": "文档或案例中提及某个知识实体。",
+    "connected_to": "设备、线路、厂站和用户之间存在拓扑或业务关联。",
+    "checks": "校核工具依据规则、约束或模型进行检查。"
+  },
+  "organization_principle": "当前图谱后端按工作流模板、工具能力和知识/数据资产组织。流程节点与9个工作流模板对齐；机理工具内部再细分机理模型工具、机理算子大类和具体叶子算子；数据驱动模型工具与真实数据资产区分；真实数据通过工程工具下的数据查询大类注册为可调用能力。"
+}
