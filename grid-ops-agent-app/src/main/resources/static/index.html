@@ -568,7 +568,7 @@ input:focus, textarea:focus, select:focus {
       <div class="brand-mark">G</div>
       <div>
         <div class="brand-title">GridOpsAgent</div>
-        <div class="brand-subtitle">知识组织驾驶舱</div>
+        <div class="brand-subtitle">知识组织与执行控制台</div>
       </div>
     </div>
     <nav class="nav">
@@ -577,7 +577,7 @@ input:focus, textarea:focus, select:focus {
       <button data-tab="graph">知识拓扑</button>
       <button data-tab="knowledge">知识库运维</button>
     </nav>
-    <div class="side-card">面向调度与运维场景组织流程、算子、知识依据和诊断会话，支持从任务到执行计划的连续分析。</div>
+    <div class="side-card">任务编排台展示模板匹配和计划预览；协同诊断会话才会实际运行 Agent/Graph 并返回真实执行轨迹。</div>
     <div class="stats">
       <div class="stat"><b id="statTemplates">0</b><small>流程模板</small></div>
       <div class="stat"><b id="statNodes">0</b><small>图谱节点</small></div>
@@ -589,7 +589,7 @@ input:focus, textarea:focus, select:focus {
     <header class="topbar">
       <div>
         <h1 id="pageTitle">任务编排台</h1>
-        <p id="pageSubtitle">识别调度任务意图，生成可执行分析步骤，并联动相关知识依据。</p>
+        <p id="pageSubtitle">识别调度任务意图，生成可执行计划预览，并联动相关知识依据。</p>
       </div>
       <div class="status-pill" id="apiStatus">连接检测中</div>
     </header>
@@ -599,14 +599,14 @@ input:focus, textarea:focus, select:focus {
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2>流程匹配</h2>
-              <p>输入调度或运维任务，系统会匹配内置流程模板，转化为可执行的分析步骤和工具调用顺序。</p>
+              <h2>流程匹配预览</h2>
+              <p>输入调度或运维任务，系统会匹配内置流程模板并生成计划草案。这里不执行工具，真实执行请切换到“协同诊断会话”。</p>
             </div>
             <button class="secondary" onclick="resetTask()">重置</button>
           </div>
           <div class="query-row">
             <input id="taskInput" value="主变油温异常诊断，请查询状态、告警历史并给出处置建议" placeholder="例如：负荷转供操作校核、N-1 风险分析、主变油温异常诊断">
-            <button class="primary" onclick="matchTask()">匹配流程</button>
+            <button class="primary" onclick="matchTask()">生成预览</button>
           </div>
           <div class="chip-row" id="quickPrompts"></div>
           <div class="summary-grid" id="matchSummary"></div>
@@ -669,7 +669,7 @@ input:focus, textarea:focus, select:focus {
             <h3>编排链路</h3>
             <div class="route-stack">
               <div class="route-card"><b>RouterAgent</b><small>识别任务类型，决定知识问答、诊断或通用会话路径。</small></div>
-              <div class="route-card"><b>PlannerAgent</b><small>结合流程模板与可用工具，生成可执行步骤。</small></div>
+              <div class="route-card"><b>PlannerAgent</b><small>结合流程模板与可用工具生成计划；只有进入会话执行后才会调用工具。</small></div>
               <div class="route-card"><b>ToolAgent</b><small>调用知识库、图谱、拓扑分析和风险校核工具。</small></div>
               <div class="route-card"><b>ReviewerAgent</b><small>汇总证据、风险项和人工复核要求。</small></div>
             </div>
@@ -852,7 +852,7 @@ var quickPrompts = [
   '新能源场站全场停电，请生成处置关注点'
 ];
 var tabMeta = {
-  task: ['任务编排台', '识别调度任务意图，生成可执行分析步骤，并联动相关知识依据。'],
+  task: ['任务编排台', '识别调度任务意图，生成计划预览，并联动相关知识依据。'],
   chat: ['运行诊断控制台', '多 Agent 编排、工具调用、证据检索和诊断结论集中呈现。'],
   graph: ['知识拓扑', '按流程编排、工具依赖、知识约束和任务子图浏览内置知识组织。'],
   knowledge: ['知识库运维', '在同一套界面中完成文档上传、列表查看和检索测试。']
@@ -939,11 +939,11 @@ async function matchTask() {
 function renderMatch(payload) {
   var template = payload.template || {};
   document.getElementById('matchSummary').innerHTML = [
-    card('命中流程', template.name || '未命中', 'score: ' + (payload.score || 0)),
-    card('推荐工具', (payload.recommended_tools || []).slice(0, 6).join(', ') || '无', '仅生成可执行 GridOps 工具链')
+    card('命中流程模板', template.name || '未命中', 'score: ' + (payload.score || 0) + ' · 预览未执行'),
+    card('推荐工具草案', (payload.recommended_tools || []).slice(0, 6).join(', ') || '无', '模板匹配结果，非真实工具返回')
   ].join('');
   var steps = payload.plan_steps || [];
-  var html = '<div class="flow-row">';
+  var html = '<div class="empty" style="margin-bottom:10px;">以下是计划预览：未调用后端工具、未产生真实耗时、未写入诊断证据。</div><div class="flow-row">';
   steps.forEach(function(step, index) {
     var tool = step.toolName || step.tool_name || step.tool || '';
     var mock = ['calculatePowerFlowEstimate','checkOperationRisk','generateFaultScenario'].indexOf(tool) >= 0;
@@ -951,6 +951,7 @@ function renderMatch(payload) {
       '<div class="flow-index">' + (index + 1) + '</div>' +
       '<div class="flow-step">' + escapeHtml(step.action || step.step || '') + '</div>' +
       '<div class="tool-pill ' + (mock ? 'mock' : '') + '">' + escapeHtml(tool || 'ANALYSIS') + '</div>' +
+      '<small>' + (mock ? 'mock/estimate 预览' : '计划预览') + '</small>' +
       '</div>';
   });
   html += '</div>';
@@ -1638,12 +1639,15 @@ function summarizeStep(step) {
   if (node.indexOf('safety') >= 0) info.push('执行安全复核');
   if (node.indexOf('final') >= 0) info.push('组织最终回答');
   if (!info.length && step.intent) info.push('意图 ' + step.intent);
-  if (step.elapsed_ms !== undefined) info.push(formatElapsed(step.elapsed_ms));
+  if (step.node_duration_ms !== undefined) info.push('节点耗时 ' + formatElapsed(step.node_duration_ms));
+  if (step.cumulative_elapsed_ms !== undefined || step.elapsed_ms !== undefined) {
+    info.push('累计 ' + formatElapsed(step.cumulative_elapsed_ms !== undefined ? step.cumulative_elapsed_ms : step.elapsed_ms));
+  }
   return info.join(' · ') || '节点执行完成';
 }
 function buildTraceDetail(step) {
   var tags = [];
-  ['trace_id','sequence','status','node_category','intent','risk_level','review_decision','next_action','evidence_score','evidence_coverage','loop_count','elapsed_ms'].forEach(function(key) {
+  ['trace_id','sequence','status','node_category','measured_node','node_duration_ms','cumulative_elapsed_ms','intent','risk_level','review_decision','next_action','evidence_score','evidence_coverage','loop_count'].forEach(function(key) {
     if (step[key] !== undefined && step[key] !== null) tags.push('<span class="tag">' + escapeHtml(key + ': ' + compactValue(step[key])) + '</span>');
   });
   var sections = [];

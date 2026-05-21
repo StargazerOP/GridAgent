@@ -42,6 +42,29 @@ GridOpsAgent 不是一个简单的聊天接口包装，而是把电力运维流�
 | 工具/算子映射 | nari 原型中的 `graph_query`、`topology_analyzer`、`operator_power_flow_calculation` 等映射为 Java 工具。 |
 | 工程边界 | 潮流估算、风险校核、故障场景生成等当前是 mock/estimate 能力，README 和工具返回会显式标注，不等同于真实 EMS/DTS 计算。 |
 
+## 能力落地对账
+
+下面这张表用于区分“已经真实落地”“当前是模板/预览”“当前是 mock/estimate”的能力边界：
+
+| 能力 | 当前状态 | 说明 |
+| --- | --- | --- |
+| DeepSeek LLM 调用 | 已落地 | 通过 Spring AI OpenAI 兼容接口调用，API Key 读取环境变量 `DEEPSEEK_API_KEY`。 |
+| Graph 主流程执行 | 已落地 | `/api/chat/stream-graph` 会实际运行 `pre_check -> context_load -> router -> 子图 -> safety_review -> final_response -> memory_save`，前端显示真实节点事件。 |
+| Graph 节点耗时 | 已落地 | 后端在 `ObservedNodeAction` 统计单节点耗时，SSE 同时返回节点耗时和累计耗时。 |
+| 任务编排台流程匹配 | 预览能力 | 调用 `/api/knowledge-org/instant-plan`，只做模板匹配和计划草案生成，不执行工具、不产生真实证据。 |
+| nari 工作流模板 | 已落地为资源 | 9 个模板已迁移到 classpath 资源，供页面匹配和 Planner 上下文使用。 |
+| nari 知识图谱 | 已落地为资源 | 71 个节点、255 条边已迁移到 classpath 资源，供拓扑页面和图谱工具查询。 |
+| MCP 工具服务 | 已落地但默认 mock 数据 | `power-tools-mcp-server` 独立运行并暴露设备状态、告警历史、日志、工单、台账工具；当前默认返回模拟电力数据。 |
+| RAG 文档上传与检索 | 已落地 | 文档上传、切片、向量检索、Milvus/内存向量存储链路已实现。检索质量取决于已上传文档和 embedding 可用性。 |
+| Skill Registry | 已落地 | 内置 5 个 Skill，当前主要作为场景提示、推荐工具和诊断流程参考。 |
+| 潮流计算 | mock/estimate | `calculatePowerFlowEstimate` 是估算演示，不是真实 EMS/DTS 潮流计算。 |
+| 操作风险校核 | mock/estimate | `checkOperationRisk` 基于模板、图谱和规则提示生成风险结论，不是真实在线安全校核。 |
+| 故障场景生成 | mock/estimate | `generateFaultScenario` 生成模拟场景，适合作为预案草案和复核线索。 |
+| RBAC / 审批 / Hook / 审计 | 部分落地 | 代码中有服务、节点和接口，适合演示治理链路；生产级用户体系、权限数据和审批流仍需接入真实系统。 |
+| 前端知识拓扑 | 已落地展示 | 可浏览流程编排、工具依赖、知识约束和当前任务子图。 |
+
+因此，页面上的“任务编排台”是规划预览；“协同诊断会话”里的 Agent 执行轨迹才是实际 Graph 运行结果。
+
 ## 应用场景
 
 | 场景 | 说明 |

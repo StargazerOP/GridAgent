@@ -31,6 +31,7 @@ public class ObservedNodeAction implements NodeAction {
 
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
+        long startedAt = System.currentTimeMillis();
         String traceId = state.value(GraphStateKeys.TRACE_ID).map(Object::toString)
                 .orElseGet(observabilityService::generateTraceId);
         String taskId = state.value(GraphStateKeys.TASK_ID).map(Object::toString).orElse(null);
@@ -41,6 +42,9 @@ public class ObservedNodeAction implements NodeAction {
         observabilityService.startSpan(traceId, taskId, sessionId, nodeName, nodeName, input);
         try {
             Map<String, Object> output = new LinkedHashMap<>(delegate.apply(state));
+            long durationMs = System.currentTimeMillis() - startedAt;
+            output.put("_last_node_name", nodeName);
+            output.put("_last_node_duration_ms", durationMs);
             if (state.value(GraphStateKeys.TRACE_ID).isEmpty()) {
                 output.put(GraphStateKeys.TRACE_ID, traceId);
             }
@@ -48,8 +52,12 @@ public class ObservedNodeAction implements NodeAction {
             saveCheckpointIfNeeded(taskId, sessionId, state, output, null);
             return output;
         } catch (Exception e) {
+            long durationMs = System.currentTimeMillis() - startedAt;
             observabilityService.endSpan("FAILED", e.getMessage(), null);
-            saveCheckpointIfNeeded(taskId, sessionId, state, Map.of(), e.getMessage());
+            saveCheckpointIfNeeded(taskId, sessionId, state, Map.of(
+                    "_last_node_name", nodeName,
+                    "_last_node_duration_ms", durationMs
+            ), e.getMessage());
             logger.error("ObservedNodeAction: node {} failed", nodeName, e);
             throw e;
         }

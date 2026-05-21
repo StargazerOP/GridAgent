@@ -82,10 +82,13 @@ public class GraphStreamService {
             stepInfo.put("status", "COMPLETED");
             stepInfo.put("timestamp", System.currentTimeMillis());
             stepInfo.put("elapsed_ms", System.currentTimeMillis() - startedAt);
+            stepInfo.put("cumulative_elapsed_ms", System.currentTimeMillis() - startedAt);
             stepInfo.put("node_category", classifyNode(nodeName));
             if (agentName != null && !agentName.isEmpty()) {
                 stepInfo.put("agent", agentName);
             }
+            state.value("_last_node_duration_ms").ifPresent(val -> stepInfo.put("node_duration_ms", val));
+            state.value("_last_node_name").ifPresent(val -> stepInfo.put("measured_node", val));
 
             // 提取常用的状态键用于前端展示
             extractIfPresent(state, stepInfo, "intent");
