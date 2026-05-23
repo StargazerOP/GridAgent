@@ -1,6 +1,7 @@
 package org.example.observability;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.entity.AgentExecutionLog;
 import org.example.entity.ToolCallLog;
 import org.example.mapper.AgentExecutionLogMapper;
@@ -17,6 +18,7 @@ import java.util.*;
 public class ObservabilityService {
 
     private static final Logger logger = LoggerFactory.getLogger(ObservabilityService.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Autowired
     private AgentExecutionLogMapper executionLogMapper;
@@ -108,10 +110,10 @@ public class ObservabilityService {
                     .taskId(taskId)
                     .sessionId(sessionId)
                     .toolName(toolName)
-                    .toolSource(toolName != null && toolName.startsWith("getDevice") || "getAlarmHistory".equals(toolName) || "getDefectTickets".equals(toolName)
+                    .toolSource(toolName != null && (toolName.startsWith("getDevice") || "getAlarmHistory".equals(toolName) || "getDefectTickets".equals(toolName))
                             ? "MCP" : "LOCAL")
-                    .requestParam(truncate(requestParam, 1000))
-                    .responseData(truncate(responseData, 1000))
+                    .requestParam(normalizeJsonForColumn(requestParam, 1000))
+                    .responseData(normalizeJsonForColumn(responseData, 1000))
                     .status(status)
                     .durationMs(durationMs)
                     .createdAt(LocalDateTime.now())
@@ -181,6 +183,23 @@ public class ObservabilityService {
     private String truncate(String text, int maxLen) {
         if (text == null) return null;
         return text.length() > maxLen ? text.substring(0, maxLen) + "..." : text;
+    }
+
+    private String normalizeJsonForColumn(String text, int maxLen) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String truncated = truncate(text, maxLen);
+        try {
+            Object parsed = OBJECT_MAPPER.readValue(truncated, Object.class);
+            return OBJECT_MAPPER.writeValueAsString(parsed);
+        } catch (Exception ignored) {
+            try {
+                return OBJECT_MAPPER.writeValueAsString(truncated);
+            } catch (Exception e) {
+                return "\"[unserializable tool payload]\"";
+            }
+        }
     }
 
     public static class Span {

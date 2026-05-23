@@ -171,7 +171,7 @@ public class PowerOpsGraphConfig {
                 .addNode("planner", node_async(observed("planner",
                         new PlannerNode(chatClient, planValidator, tools), observabilityService, checkpointService)))
                 .addNode("executor", node_async(observed("executor",
-                        new ExecutorNode(tools, retryRegistry, toolResultValidator, observabilityService),
+                        new ExecutorNode(tools, retryRegistry, toolResultValidator, planValidator, observabilityService),
                         observabilityService, checkpointService)))
                 .addNode("evidence_validation", node_async(observed("evidence_validation",
                         new EvidenceValidationNode(evidenceQualityEvaluator), observabilityService, checkpointService)))
@@ -183,7 +183,7 @@ public class PowerOpsGraphConfig {
                 .addNode("replanner", node_async(observed("replanner",
                         new ReplannerNode(chatClient), observabilityService, checkpointService)))
                 .addNode("action_recommend", node_async(observed("action_recommend",
-                        new ActionRecommendNode(), observabilityService, checkpointService)))
+                        new ActionRecommendNode(chatClient), observabilityService, checkpointService)))
 
                 .addNode("chat", node_async(observed("chat",
                         chatAgentNode, observabilityService, checkpointService)))

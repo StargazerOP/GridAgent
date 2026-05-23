@@ -20,16 +20,23 @@ import org.springframework.stereotype.Component;
 public class LlmFactory {
 
     private final OpenAiApi openAiApi;
+    private final OpenAiApi embeddingOpenAiApi;
     private final String chatModelName;
     private final String embeddingModelName;
 
     public LlmFactory(@Value("${spring.ai.openai.api-key}") String apiKey,
                       @Value("${spring.ai.openai.base-url}") String baseUrl,
+                      @Value("${spring.ai.openai.embedding.api-key:${spring.ai.openai.api-key}}") String embeddingApiKey,
+                      @Value("${spring.ai.openai.embedding.base-url:${spring.ai.openai.base-url}}") String embeddingBaseUrl,
                       @Value("${spring.ai.openai.chat.options.model}") String chatModelName,
                       @Value("${spring.ai.openai.embedding.options.model}") String embeddingModelName) {
         this.openAiApi = OpenAiApi.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
+                .build();
+        this.embeddingOpenAiApi = OpenAiApi.builder()
+                .baseUrl(embeddingBaseUrl)
+                .apiKey(embeddingApiKey)
                 .build();
         this.chatModelName = chatModelName;
         this.embeddingModelName = embeddingModelName;
@@ -81,7 +88,7 @@ public class LlmFactory {
 
     /** 文本向量化模型 */
     public EmbeddingModel embeddingModel() {
-        return new OpenAiEmbeddingModel(openAiApi,
+        return new OpenAiEmbeddingModel(embeddingOpenAiApi,
                 MetadataMode.EMBED,
                 OpenAiEmbeddingOptions.builder()
                         .model(embeddingModelName)

@@ -52,8 +52,10 @@ spring:
           model: deepseek-chat
           timeout: 180000
       embedding:
+        api-key: local-bge-m3
+        base-url: http://127.0.0.1:9910
         options:
-          model: deepseek-embedding-v1
+          model: bge-m3
       retry:
         max-attempts: 3
         backoff:

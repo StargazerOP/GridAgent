@@ -2,9 +2,11 @@ package org.example.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.milvus.client.MilvusServiceClient;
+import io.milvus.grpc.FlushResponse;
 import io.milvus.grpc.MutationResult;
 import io.milvus.param.R;
 import io.milvus.param.RpcStatus;
+import io.milvus.param.collection.FlushParam;
 import io.milvus.param.collection.LoadCollectionParam;
 import io.milvus.param.dml.DeleteParam;
 import io.milvus.param.dml.InsertParam;
@@ -30,6 +32,8 @@ import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -89,10 +93,11 @@ public class KnowledgeBaseService {
 
         String documentId = "DOC-" + UUID.randomUUID().toString().substring(0, 8);
 
-        File uploadDir = new File(uploadPath);
+        Path uploadDirPath = Paths.get(uploadPath).toAbsolutePath().normalize();
+        File uploadDir = uploadDirPath.toFile();
         if (!uploadDir.exists()) uploadDir.mkdirs();
 
-        String filePath = uploadPath + File.separator + documentId + "." + fileType;
+        String filePath = uploadDirPath.resolve(documentId + "." + fileType).toString();
         file.transferTo(new File(filePath));
 
         int version = 1;
@@ -192,11 +197,7 @@ public class KnowledgeBaseService {
 
                     Map<String, Object> metadata = buildChunkMetadata(document, chunk, chunks.size());
 
-                    if (milvusEnabled && milvusClient != null) {
-                        insertToMilvus(chunk.getContent(), embedding, metadata, chunk.getChunkIndex());
-                    } else {
-                        insertToMemory(chunk.getContent(), embedding, metadata, chunk.getChunkIndex());
-                    }
+                    storeVector(chunk.getContent(), embedding, metadata, chunk.getChunkIndex());
 
                     embeddingCount++;
                 } catch (Exception e) {
@@ -204,10 +205,18 @@ public class KnowledgeBaseService {
                 }
             }
 
-            updateDocumentStatus(documentId, "COMPLETED", chunks.size());
             updateDocumentEmbeddingCount(documentId, embeddingCount);
 
-            updateProcessTask(taskId, "COMPLETED", null, null);
+            String finalStatus = resolveIndexStatus(chunks.size(), embeddingCount);
+            updateDocumentStatus(documentId, finalStatus, chunks.size());
+
+            String errorMessage = null;
+            if ("FAILED".equals(finalStatus)) {
+                errorMessage = "No chunks were embedded or written to the vector store";
+            } else if ("PARTIAL_COMPLETED".equals(finalStatus)) {
+                errorMessage = "Only " + embeddingCount + " of " + chunks.size() + " chunks were embedded";
+            }
+            updateProcessTask(taskId, finalStatus, null, errorMessage);
             updateProcessTaskCompletedAt(taskId);
 
             logger.info("文档处理完成: documentId={}, chunks={}, embeddings={}", documentId, chunks.size(), embeddingCount);
@@ -217,6 +226,16 @@ public class KnowledgeBaseService {
             updateProcessTask(taskId, "FAILED", null, e.getMessage());
             updateDocumentStatus(documentId, "FAILED", 0);
         }
+    }
+
+    private String resolveIndexStatus(int chunkCount, int embeddingCount) {
+        if (chunkCount == 0 || embeddingCount == 0) {
+            return "FAILED";
+        }
+        if (embeddingCount < chunkCount) {
+            return "PARTIAL_COMPLETED";
+        }
+        return "COMPLETED";
     }
 
     private void persistChunks(String documentId, List<DocumentChunk> chunks) {
@@ -265,6 +284,20 @@ public class KnowledgeBaseService {
         logger.debug("向量插入内存存储成功: id={}, documentId={}, chunk={}", id, metadata.get("documentId"), chunkIndex);
     }
 
+    private void storeVector(String content, List<Float> vector, Map<String, Object> metadata, int chunkIndex) {
+        if (!milvusEnabled || milvusClient == null) {
+            insertToMemory(content, vector, metadata, chunkIndex);
+            return;
+        }
+        try {
+            insertToMilvus(content, vector, metadata, chunkIndex);
+        } catch (Exception e) {
+            logger.warn("Milvus vector write failed, falling back to in-memory store. documentId={}, chunkIndex={}, error={}",
+                    metadata.get("documentId"), chunkIndex, e.getMessage());
+            insertToMemory(content, vector, metadata, chunkIndex);
+        }
+    }
+
     private void insertToMilvus(String content, List<Float> vector,
                                 Map<String, Object> metadata, int chunkIndex) throws Exception {
         try {
@@ -299,6 +332,13 @@ public class KnowledgeBaseService {
 
             if (insertResponse.getStatus() != 0) {
                 throw new RuntimeException("插入向量失败: " + insertResponse.getMessage());
+            }
+
+            R<FlushResponse> flushResponse = milvusClient.flush(FlushParam.newBuilder()
+                    .addCollectionName(MilvusConstants.MILVUS_COLLECTION_NAME)
+                    .build());
+            if (flushResponse.getStatus() != 0) {
+                throw new RuntimeException("Flush Milvus collection failed: " + flushResponse.getMessage());
             }
 
             logger.debug("向量插入Milvus成功: id={}, documentId={}, chunk={}", id, metadata.get("documentId"), chunkIndex);

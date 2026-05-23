@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.example.graph.model.PlanStep;
+import org.example.service.VectorEmbeddingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -55,14 +56,19 @@ public class KnowledgeOrganizationService {
     );
 
     private final ObjectMapper objectMapper;
+    private final VectorEmbeddingService embeddingService;
     private List<WorkflowTemplate> templates = List.of();
     private List<KnowledgeGraphNode> nodes = List.of();
     private List<KnowledgeGraphEdge> edges = List.of();
     private Map<String, Object> schema = Map.of();
     private Map<String, KnowledgeGraphNode> nodeById = Map.of();
+    private Map<String, List<Float>> templateEmbeddings = Map.of();
+    private Map<String, List<Float>> nodeEmbeddings = Map.of();
+    private volatile boolean semanticIndexReady = false;
 
-    public KnowledgeOrganizationService(ObjectMapper objectMapper) {
+    public KnowledgeOrganizationService(ObjectMapper objectMapper, VectorEmbeddingService embeddingService) {
         this.objectMapper = objectMapper;
+        this.embeddingService = embeddingService;
     }
 
     @PostConstruct
@@ -157,6 +163,7 @@ public class KnowledgeOrganizationService {
         result.put("recommended_tools", match.getRecommendedTools());
         result.put("plan_steps", match.getPlanSteps());
         result.put("warnings", match.getWarnings());
+        result.put("match_strategy", "BGE_M3_SEMANTIC_PLUS_KEYWORD");
         result.put("template_status", "resource_seed_not_persisted");
         return result;
     }
@@ -308,6 +315,7 @@ public class KnowledgeOrganizationService {
     }
 
     private List<KnowledgeGraphNode> candidateNodes(String query, WorkflowTemplate template) {
+        ensureSemanticIndex();
         LinkedHashSet<String> ids = new LinkedHashSet<>();
         if (template != null) {
             String workflowId = "workflow_" + template.getTemplateId();
@@ -321,8 +329,9 @@ public class KnowledgeOrganizationService {
                     });
         }
         String q = normalize(query);
+        List<Float> queryVector = embeddingOrNull(query);
         nodes.stream()
-                .map(node -> Map.entry(node, scoreNode(q, node)))
+                .map(node -> Map.entry(node, scoreNode(q, queryVector, node)))
                 .filter(entry -> entry.getValue() > 0)
                 .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
                 .limit(12)
@@ -331,36 +340,118 @@ public class KnowledgeOrganizationService {
     }
 
     private double scoreTemplate(String query, WorkflowTemplate template) {
+        ensureSemanticIndex();
         String q = normalize(query);
         if (q.isBlank()) {
             return 0;
         }
-        double score = 0;
-        score += textScore(q, template.getName(), 4);
-        score += textScore(q, template.getDescription(), 2);
-        score += textScore(q, template.getScene(), 2);
+        double lexical = 0;
+        lexical += textScore(q, template.getName(), 4);
+        lexical += textScore(q, template.getDescription(), 2);
+        lexical += textScore(q, template.getScene(), 2);
         for (String keyword : template.getKeywords()) {
-            score += textScore(q, keyword, 5);
+            lexical += textScore(q, keyword, 5);
         }
         for (WorkflowStep step : template.getWorkflow()) {
-            score += textScore(q, step.getStep(), 1.5);
-            score += textScore(q, step.getTool(), 1);
+            lexical += textScore(q, step.getStep(), 1.5);
+            lexical += textScore(q, step.getTool(), 1);
         }
-        return score;
+        double semantic = semanticScore(query, templateEmbeddings.get(template.getTemplateId()));
+        return combinedScore(semantic, lexical);
     }
 
-    private double scoreNode(String normalizedQuery, KnowledgeGraphNode node) {
+    private double scoreNode(String normalizedQuery, List<Float> queryVector, KnowledgeGraphNode node) {
         if (normalizedQuery.isBlank()) {
             return 0;
         }
-        double score = textScore(normalizedQuery, node.getName(), 3);
-        score += textScore(normalizedQuery, node.getDescription(), 1.5);
-        score += textScore(normalizedQuery, node.getCategory(), 1);
-        score += textScore(normalizedQuery, node.getRole(), 1);
+        double lexical = textScore(normalizedQuery, node.getName(), 3);
+        lexical += textScore(normalizedQuery, node.getDescription(), 1.5);
+        lexical += textScore(normalizedQuery, node.getCategory(), 1);
+        lexical += textScore(normalizedQuery, node.getRole(), 1);
         for (String keyword : node.getKeywords()) {
-            score += textScore(normalizedQuery, keyword, 3);
+            lexical += textScore(normalizedQuery, keyword, 3);
         }
-        return score;
+        double semantic = 0;
+        if (queryVector != null) {
+            List<Float> nodeVector = nodeEmbeddings.get(node.getId());
+            if (nodeVector != null && nodeVector.size() == queryVector.size()) {
+                semantic = Math.max(0, embeddingService.calculateCosineSimilarity(queryVector, nodeVector));
+            }
+        }
+        return combinedScore(semantic, lexical);
+    }
+
+    private void ensureSemanticIndex() {
+        if (semanticIndexReady) {
+            return;
+        }
+        synchronized (this) {
+            if (semanticIndexReady) {
+                return;
+            }
+            try {
+                Map<String, List<Float>> templateIndex = new LinkedHashMap<>();
+                for (WorkflowTemplate template : templates) {
+                    if (template.getTemplateId() != null) {
+                        templateIndex.put(template.getTemplateId(), embeddingService.generateEmbedding(templateSemanticText(template)));
+                    }
+                }
+                Map<String, List<Float>> nodeIndex = new LinkedHashMap<>();
+                for (KnowledgeGraphNode node : nodes) {
+                    if (node.getId() != null) {
+                        nodeIndex.put(node.getId(), embeddingService.generateEmbedding(searchableText(node)));
+                    }
+                }
+                templateEmbeddings = templateIndex;
+                nodeEmbeddings = nodeIndex;
+                semanticIndexReady = true;
+                logger.info("Knowledge organization semantic index ready: templates={}, nodes={}",
+                        templateEmbeddings.size(), nodeEmbeddings.size());
+            } catch (Exception e) {
+                semanticIndexReady = true;
+                templateEmbeddings = Map.of();
+                nodeEmbeddings = Map.of();
+                logger.warn("Knowledge organization semantic index unavailable, falling back to keyword match: {}", e.getMessage());
+            }
+        }
+    }
+
+    private double semanticScore(String query, List<Float> targetVector) {
+        if (targetVector == null || targetVector.isEmpty()) {
+            return 0;
+        }
+        List<Float> queryVector = embeddingOrNull(query);
+        if (queryVector == null || queryVector.size() != targetVector.size()) {
+            return 0;
+        }
+        return Math.max(0, embeddingService.calculateCosineSimilarity(queryVector, targetVector));
+    }
+
+    private List<Float> embeddingOrNull(String text) {
+        try {
+            return embeddingService.generateEmbedding(text);
+        } catch (Exception e) {
+            logger.debug("Failed to generate semantic match embedding: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private double combinedScore(double semantic, double lexical) {
+        double lexicalNormalized = lexical <= 0 ? 0 : lexical / (lexical + 6.0);
+        return semantic * 8.0 + lexicalNormalized * 4.0;
+    }
+
+    private String templateSemanticText(WorkflowTemplate template) {
+        StringBuilder text = new StringBuilder();
+        text.append(valueOr(template.getName(), "")).append("。")
+                .append(valueOr(template.getScene(), "")).append("。")
+                .append(valueOr(template.getDescription(), "")).append("。")
+                .append(String.join("，", template.getKeywords())).append("。");
+        for (WorkflowStep step : template.getWorkflow()) {
+            text.append(valueOr(step.getStep(), "")).append("。")
+                    .append(valueOr(step.getTool(), "")).append("。");
+        }
+        return text.toString();
     }
 
     private double textScore(String normalizedQuery, String text, double weight) {

@@ -1,5 +1,16 @@
 # GridOpsAgent
 
+## 真实运行边界与成本说明
+
+当前版本包含真实可运行链路、内置种子数据和 mock/estimate 能力三类内容，部署或演示前请按下面边界理解：
+
+- **真实依赖 Docker 的能力**：主应用依赖 MySQL 保存会话、文档元数据、切片、处理任务、Trace 与工具调用日志；依赖 Milvus 保存 RAG 向量索引。Redis 已保留配置和依赖，面向后续运行缓存/分布式会话扩展；当前核心链路没有直接读写 Redis，未启动 Redis 时主应用仍可运行。MySQL 默认端口 `3307`，Redis 预留端口 `6379`，Milvus 默认端口 `19530`。
+- **RAG 本地存储位置**：上传原文件保存到 `grid-ops-agent-app/uploads`；文档、切片和处理状态保存到 MySQL；向量默认写入本地 Docker Milvus collection `biz`。如果 Milvus 不可用，系统会退回内存向量库，页面会明确提示“当前使用内存向量库，重启会丢失”。
+- **会消耗 DeepSeek token/额度的能力**：多 Agent 对话、路由、规划、诊断、风险复核和知识问答生成会使用 `DEEPSEEK_API_KEY`。默认配置下 RAG embedding 使用本地 BGE-M3 服务 `http://127.0.0.1:9910`，不会消耗 DeepSeek token。
+- **Embedding 服务边界**：默认 embedding endpoint 是本地 OpenAI-compatible BGE-M3 服务，模型目录为 `E:\code\bge-m3`，端口为 `9910`，需要和 MCP Server、主应用一样单独启动。如果本地 BGE-M3 不可用，系统会启用 `LOCAL_HASH_FALLBACK` 本地哈希向量，保证上传、切片、入库、检索链路可验证；该模式只适合本地开发和连通性自检，不等同于生产级语义检索质量。
+- **mock/estimate 能力**：MCP 电力工具默认返回模拟设备、告警、工单、台账数据；`calculatePowerFlowEstimate`、`checkOperationRisk`、`generateFaultScenario` 等算子会在返回中标注 mock/estimate 或数据来源，不代表真实 EMS/DTS/SCADA 计算结果。
+- **nari 迁移内容边界**：`knowledge-organization` 中的流程模板、知识图谱节点和边是内置种子资源，用于任务匹配、图谱浏览和 Planner 上下文增强；不会启动原 Python demo 运行时。
+
 GridOpsAgent 是一个面向电网智能运维场景的 Multi-Agent 平台。项目基于 Spring Boot 3.2、Spring AI、Spring AI Alibaba Graph、MCP、RAG、MySQL、Redis 和 Milvus 构建，提供电力知识问答、设备状态查询、告警诊断、知识库上传、流程模板匹配、知识拓扑浏览、即时规划、审批与可观测性等能力。
 
 当前仓库是 Maven 多模块项目，核心代码是 Java。`nari_demo_test/` 是本地 Python 原型目录，已经从 Git 仓库中移除并加入忽略；其中的“流程模板、知识图谱、即时规划、资产目录”思路已经迁移到 Java 主应用的 `knowledge-organization` 资源、接口、前端页面和 Planner 上下文中。
@@ -104,7 +115,7 @@ GridOpsAgent-main/
 | AI 与 Agent | Spring AI 1.1.0、Spring AI Alibaba 1.1.0.0-RC2、Graph 编排 |
 | 大模型接入 | OpenAI 兼容接口，默认 DeepSeek：`DEEPSEEK_API_KEY` |
 | 工具协议 | Spring AI MCP Client / MCP Server |
-| 数据存储 | MySQL 8、Redis 7、Milvus |
+| 数据存储 | MySQL 8、Milvus；Redis 7 为预留缓存组件 |
 | 文档解析 | Apache POI、PDFBox、Jsoup |
 | 稳定性 | Resilience4j Retry / CircuitBreaker |
 | 可观测性 | Spring Boot Actuator、Micrometer、Prometheus |
@@ -113,6 +124,7 @@ GridOpsAgent-main/
 
 | 模块 | 端口 | 说明 |
 | --- | --- | --- |
+| `scripts/bge_m3_embedding_server.py` | `9910` | 本地 BGE-M3 embedding 服务，提供 OpenAI-compatible `/v1/embeddings` 接口，模型目录默认 `E:\code\bge-m3`。 |
 | `power-tools-mcp-server` | `9901` | MCP Server，提供电力运维工具查询能力，默认启用 mock 数据。 |
 | `grid-ops-agent-app` | `9900` | 主应用，负责 Web/API、Agent/Graph 编排、RAG、知识库、审批、审计和可观测性。 |
 
@@ -138,7 +150,7 @@ GridOpsAgent-main/
 │ 本地工具 + MCP Power Tools                                   │
 ├─────────────────────────────────────────────────────────────┤
 │ 数据与基础设施                                               │
-│ MySQL / Redis / Milvus / Docker                              │
+│ MySQL / Milvus / Docker / Redis（预留缓存）                    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -271,6 +283,8 @@ Graph 状态由 `GraphStateKeys`、`PowerOpsStateFactory` 和 `PowerOpsStateView
 - Maven 3.9+
 - Docker Desktop
 - 可用的 DeepSeek API Key，设置到 `DEEPSEEK_API_KEY`
+- 本地 BGE-M3 embedding 模型目录：`E:\code\bge-m3`
+- Python 3.10+，并安装 `fastapi`、`uvicorn`、`onnxruntime`、`tokenizers`、`numpy`，用于启动本地 BGE-M3 embedding 服务
 - Windows PowerShell、Git Bash、WSL、Linux 或 macOS 终端均可运行
 
 ## 快速启动
@@ -304,17 +318,28 @@ export DEEPSEEK_API_KEY="你的 DeepSeek API Key"
 
 ### 3. 启动基础设施
 
-MySQL 和 Redis：
+MySQL：
 
 ```bash
 docker run -d --name mysql-gridops -p 3307:3306 -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=power_aiops mysql:8.0 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+```
+
+如果 MySQL 容器已存在但停止了：
+
+```bash
+docker start mysql-gridops
+```
+
+Redis 当前是预留缓存组件，主流程不强依赖。若希望按完整预留环境启动，可额外执行：
+
+```bash
 docker run -d --name redis-gridops -p 6379:6379 redis:7-alpine
 ```
 
-如果容器已存在但停止了：
+如果 Redis 容器已存在但停止了：
 
 ```bash
-docker start mysql-gridops redis-gridops
+docker start redis-gridops
 ```
 
 启动 Milvus 和 Attu：
@@ -336,13 +361,39 @@ milvus:
   enabled: false
 ```
 
-### 4. 编译项目
+### 4. 启动本地 BGE-M3 Embedding 服务
+
+RAG 向量化默认调用本地 BGE-M3。该服务是独立进程，每次完整启动系统时都需要启动一次：
+
+```powershell
+python scripts\bge_m3_embedding_server.py
+```
+
+服务地址：
+
+```text
+http://127.0.0.1:9910
+```
+
+验证：
+
+```powershell
+curl http://127.0.0.1:9910/health
+```
+
+正常返回：
+
+```json
+{"status":"UP","model":"bge-m3","dimension":1024}
+```
+
+### 5. 编译项目
 
 ```bash
 mvn clean compile
 ```
 
-### 5. 启动 MCP 工具服务
+### 6. 启动 MCP 工具服务
 
 必须先启动 MCP Server：
 
@@ -356,7 +407,7 @@ mvn -pl power-tools-mcp-server spring-boot:run
 http://localhost:9901
 ```
 
-### 6. 启动主应用
+### 7. 启动主应用
 
 另开一个终端：
 
@@ -386,10 +437,12 @@ http://localhost:9900/
 | 知识库管理 | 上传 `aiops-docs/` 或自定义文档，构建 RAG 检索索引。 |
 | 观测与治理 | 查看工具、Skill、审批、Trace 等运行信息。 |
 
-### 7. 验证服务
+### 8. 验证服务
 
 ```bash
+curl http://127.0.0.1:9910/health
 curl http://localhost:9900/actuator/health
+curl http://localhost:9900/api/knowledge/health
 curl http://localhost:9900/milvus/health
 curl http://localhost:9901/sse -H "Accept: text/event-stream"
 ```
@@ -398,9 +451,11 @@ curl http://localhost:9901/sse -H "Accept: text/event-stream"
 
 ## Windows 后台启动示例
 
-PowerShell 后台启动两个服务：
+PowerShell 后台启动本地 BGE-M3、MCP Server 和主应用：
 
 ```powershell
+Start-Process powershell -ArgumentList "python scripts\bge_m3_embedding_server.py *> bge-m3-embedding.log"
+Start-Sleep -Seconds 5
 Start-Process powershell -ArgumentList "mvn -pl power-tools-mcp-server spring-boot:run *> mcp-server.log"
 Start-Sleep -Seconds 15
 Start-Process powershell -ArgumentList "mvn -pl grid-ops-agent-app spring-boot:run *> server.log"
@@ -409,8 +464,17 @@ Start-Process powershell -ArgumentList "mvn -pl grid-ops-agent-app spring-boot:r
 查看日志：
 
 ```powershell
+Get-Content .\bge-m3-embedding.log -Wait
 Get-Content .\mcp-server.log -Wait
 Get-Content .\server.log -Wait
+```
+
+停止三个本地服务：
+
+```powershell
+Get-NetTCPConnection -LocalPort 9900,9901,9910 -State Listen |
+  Select-Object -ExpandProperty OwningProcess -Unique |
+  ForEach-Object { Stop-Process -Id $_ -Force }
 ```
 
 ## Linux / macOS / Git Bash 辅助命令
@@ -420,7 +484,7 @@ Get-Content .\server.log -Wait
 ```bash
 make help
 make up       # 启动 Milvus
-make start    # 后台启动 MCP Server 和主应用
+make start    # 后台启动 MCP Server 和主应用；本地 BGE-M3 仍需按第 4 步单独启动
 make upload   # 上传 aiops-docs 下的示例文档
 make stop     # 停止 Spring Boot 服务
 make down     # 停止 Milvus
@@ -458,6 +522,11 @@ spring:
       chat:
         options:
           model: deepseek-chat
+      embedding:
+        api-key: local-bge-m3
+        base-url: http://127.0.0.1:9910
+        options:
+          model: bge-m3
     mcp:
       client:
         sse:
@@ -647,6 +716,22 @@ Bash：
 echo $DEEPSEEK_API_KEY
 ```
 
+### Embedding API 显示异常
+
+默认 RAG embedding 调用本地 BGE-M3 服务。先确认 `9910` 端口服务已启动：
+
+```powershell
+curl http://127.0.0.1:9910/health
+```
+
+如果未启动，在项目根目录执行：
+
+```powershell
+python scripts\bge_m3_embedding_server.py
+```
+
+主应用健康面板中 `Embedding API` 应显示 `Local BGE-M3`、`bge-m3`、`1024` 维。如果 BGE-M3 服务不可用，系统会回退到 `LOCAL_HASH_FALLBACK`，页面会提示已启用本地兜底；此时链路可跑通，但语义检索质量不代表真实效果。
+
 ### Milvus 连接失败
 
 检查容器：
@@ -676,8 +761,9 @@ milvus:
 | --- | --- |
 | 主应用 | `9900` |
 | MCP 工具服务 | `9901` |
+| 本地 BGE-M3 Embedding 服务 | `9910` |
 | MySQL | `3307` |
-| Redis | `6379` |
+| Redis 预留缓存 | `6379` |
 | Milvus | `19530` |
 | Attu | `8001` |
 
@@ -685,12 +771,21 @@ milvus:
 
 ## 停止服务
 
-停止 Spring Boot 服务：在启动它们的终端中按 `Ctrl+C`。
+停止 Spring Boot / BGE-M3 服务：在启动它们的终端中按 `Ctrl+C`。
+
+PowerShell 中也可以按端口停止本地三个服务：
+
+```powershell
+Get-NetTCPConnection -LocalPort 9900,9901,9910 -State Listen |
+  Select-Object -ExpandProperty OwningProcess -Unique |
+  ForEach-Object { Stop-Process -Id $_ -Force }
+```
 
 停止容器：
 
 ```bash
-docker rm -f mysql-gridops redis-gridops
+docker rm -f mysql-gridops
+docker rm -f redis-gridops  # 如果启动了预留 Redis 容器
 docker compose -f vector-database.yml down
 ```
 

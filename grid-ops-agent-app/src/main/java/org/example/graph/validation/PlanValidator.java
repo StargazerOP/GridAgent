@@ -17,11 +17,18 @@ public class PlanValidator {
     private static final int MAX_STEPS = 8;
     private static final Set<String> VALID_STEP_TYPES = Set.of("TOOL_CALL", "RAG_QUERY", "ANALYSIS", "APPROVAL", "FINALIZE");
     private static final Set<String> VALID_STATUSES = Set.of("PENDING", "RUNNING", "COMPLETED", "FAILED", "SKIPPED", "RETRYING");
-    private static final Map<String, String> TOOL_ALIASES = Map.of(
-            "queryDeviceStatus", "getDeviceStatus",
-            "getDeviceTicket", "getDefectTickets",
-            "getDeviceTickets", "getDefectTickets",
-            "searchInternalDocs", "queryInternalDocs"
+    private static final Map<String, String> TOOL_ALIASES = Map.ofEntries(
+            Map.entry("queryDeviceStatus", "getDeviceStatus"),
+            Map.entry("getDeviceTicket", "getDefectTickets"),
+            Map.entry("getDeviceTickets", "getDefectTickets"),
+            Map.entry("searchInternalDocs", "queryInternalDocs"),
+            Map.entry("queryMaintenanceSchedule", "queryInternalDocs"),
+            Map.entry("queryMaintenancePlan", "queryInternalDocs"),
+            Map.entry("getMaintenanceSchedule", "queryInternalDocs"),
+            Map.entry("generateFaultScena", "generateFaultScenario"),
+            Map.entry("faultScenarioGenerator", "generateFaultScenario"),
+            Map.entry("operationRiskChecker", "checkOperationRisk"),
+            Map.entry("powerFlowEstimate", "calculatePowerFlowEstimate")
     );
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -41,6 +48,7 @@ public class PlanValidator {
 
         Set<String> availableTools = availableToolNames(tools);
         List<PlanStep> normalized = new ArrayList<>();
+        steps.sort(Comparator.comparingInt(PlanStep::effectiveStepNo));
         int limit = Math.min(steps.size(), MAX_STEPS);
         if (steps.size() > MAX_STEPS) {
             warnings.add("计划步骤超过 " + MAX_STEPS + " 步，已截断");
@@ -49,6 +57,7 @@ public class PlanValidator {
         for (int i = 0; i < limit; i++) {
             PlanStep step = steps.get(i);
             normalizeStep(step, i + 1, availableTools, warnings);
+            renumber(step, normalized.size() + 1);
             normalized.add(step);
         }
 
@@ -142,6 +151,11 @@ public class PlanValidator {
             toolName = TOOL_ALIASES.get(toolName);
             warnings.add(step.getStepId() + " 工具名已映射为 " + toolName);
         }
+        String fuzzyTool = resolveFuzzyTool(toolName, availableTools);
+        if (fuzzyTool != null && !fuzzyTool.equals(toolName)) {
+            warnings.add(step.getStepId() + " 工具名已修正为 " + fuzzyTool);
+            toolName = fuzzyTool;
+        }
         if (toolName != null && !toolName.isBlank()) {
             step.setToolName(toolName);
             step.setTool(toolName);
@@ -165,6 +179,32 @@ public class PlanValidator {
                 && !availableTools.contains(step.effectiveToolName())) {
             warnings.add(step.getStepId() + " 工具不存在: " + step.effectiveToolName());
         }
+    }
+
+    public PlanStep normalizeAdditionalStep(PlanStep step, int index, Set<String> availableTools, List<String> warnings) {
+        normalizeStep(step, index, availableTools, warnings);
+        renumber(step, index);
+        return step;
+    }
+
+    private void renumber(PlanStep step, int index) {
+        step.setStepNo(index);
+        step.setStep(index);
+        step.setStepId(String.format("step-%03d", index));
+    }
+
+    private String resolveFuzzyTool(String toolName, Set<String> availableTools) {
+        if (toolName == null || toolName.isBlank() || availableTools == null || availableTools.isEmpty()) {
+            return toolName;
+        }
+        if (availableTools.contains(toolName)) {
+            return toolName;
+        }
+        String lower = toolName.toLowerCase(Locale.ROOT);
+        List<String> matches = availableTools.stream()
+                .filter(name -> name.toLowerCase(Locale.ROOT).startsWith(lower) || lower.startsWith(name.toLowerCase(Locale.ROOT)))
+                .toList();
+        return matches.size() == 1 ? matches.get(0) : toolName;
     }
 
     private List<PlanStep> convert(List<?> rawSteps) {

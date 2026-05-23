@@ -25,20 +25,19 @@ public class FinalResponseNode implements NodeAction {
             stepResults = (List<?>) stepResultsObj;
         }
 
-        if (!stepResults.isEmpty() && !response.contains("执行过程摘要")) {
+        if (!stepResults.isEmpty() && !response.contains("执行概况")) {
             StringBuilder sb = new StringBuilder(response);
-            sb.append("\n\n--- 执行过程摘要 ---\n");
-            for (Object obj : stepResults) {
-                if (obj instanceof Map) {
-                    Map<?, ?> m = (Map<?, ?>) obj;
-                    Object stepVal = m.get("step");
-                    Object actionVal = m.get("action");
-                    Object statusVal = m.get("status");
-                    sb.append("步骤").append(stepVal != null ? stepVal : "?").append(" [")
-                            .append(actionVal != null ? actionVal : "?").append("]: ")
-                            .append(statusVal != null ? statusVal : "?").append("\n");
-                }
-            }
+            sb.append("\n\n--- 执行概况 ---\n");
+            long completed = stepResults.stream()
+                    .filter(obj -> obj instanceof Map<?, ?> map && "COMPLETED".equalsIgnoreCase(String.valueOf(map.get("status"))))
+                    .count();
+            long failed = stepResults.stream()
+                    .filter(obj -> obj instanceof Map<?, ?> map && "FAILED".equalsIgnoreCase(String.valueOf(map.get("status"))))
+                    .count();
+            sb.append("本轮新增工具调用 ").append(stepResults.size())
+                    .append(" 项，成功 ").append(completed)
+                    .append(" 项，失败 ").append(failed)
+                    .append(" 项。详细步骤可在上方执行轨迹中展开查看。\n");
             response = sb.toString();
         }
 

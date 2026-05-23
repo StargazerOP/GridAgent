@@ -3,6 +3,7 @@ package org.example.controller;
 import org.example.entity.KnowledgeDocument;
 import org.example.entity.KnowledgeProcessTask;
 import org.example.service.KnowledgeBaseService;
+import org.example.service.RagDiagnosticsService;
 import org.example.service.VectorSearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,9 @@ public class KnowledgeController {
 
     @Autowired
     private KnowledgeBaseService knowledgeBaseService;
+
+    @Autowired
+    private RagDiagnosticsService ragDiagnosticsService;
 
     @PostMapping("/documents/upload")
     public Map<String, Object> uploadDocument(
@@ -113,6 +117,16 @@ public class KnowledgeController {
         response.put("results", results);
         response.put("total", results.size());
         return response;
+    }
+
+    @GetMapping("/health")
+    public Map<String, Object> ragHealth() {
+        return ragDiagnosticsService.health();
+    }
+
+    @PostMapping("/self-test")
+    public Map<String, Object> ragSelfTest() {
+        return ragDiagnosticsService.selfTest();
     }
 
     @GetMapping("/documents/{documentName}/versions")

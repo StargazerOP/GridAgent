@@ -40,7 +40,10 @@ public class InternalDocsTools {
 
         try {
             List<VectorSearchService.SearchResult> searchResults =
-                    vectorSearchService.searchSimilarDocuments(query, topK);
+                    vectorSearchService.searchSimilarDocuments(query, Math.max(topK * 3, topK)).stream()
+                            .filter(result -> result.getMetadata() == null || !result.getMetadata().contains("\"documentType\":\"RAG_SELF_TEST\""))
+                            .limit(topK)
+                            .toList();
 
             if (searchResults.isEmpty()) {
                 return "{\"status\": \"no_results\", \"message\": \"知识库中未找到相关文档，请尝试使用其他工具查询。\"}";

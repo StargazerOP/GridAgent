@@ -56,6 +56,9 @@ public class DiagnosisNode implements NodeAction {
                 - Handling suggestions
                 - Safety notes
                 - Uncertainty statement
+
+                Do not reproduce raw tool logs, JSON payloads, Markdown step blocks, or stack traces.
+                Summarize tool evidence in concise operational language.
                 """);
 
         String result = diagnosisAgent.create().call(diagnosisInput.toString()).getText();

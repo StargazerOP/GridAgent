@@ -6,6 +6,8 @@ import org.example.agent.tool.InternalDocsTools;
 import org.example.agent.tool.power.PowerAnalysisOperatorTools;
 import org.example.agent.tool.power.PowerSafetyRulesTools;
 import org.example.tool.ToolRegistryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -22,6 +24,8 @@ import java.util.List;
 
 @Configuration
 public class ToolConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(ToolConfig.class);
 
     @Autowired
     private DateTimeTools dateTimeTools;
@@ -51,10 +55,20 @@ public class ToolConfig {
                 .build();
 
         List<ToolCallback> callbacks = new ArrayList<>(List.of(localTools.getToolCallbacks()));
-        List<McpSyncClient> mcpSyncClients = mcpSyncClientsProvider.getIfAvailable(List::of);
+        List<McpSyncClient> mcpSyncClients;
+        try {
+            mcpSyncClients = mcpSyncClientsProvider.getIfAvailable(List::of);
+        } catch (Exception e) {
+            logger.warn("MCP tools are unavailable; continuing with local tools only. error={}", e.getMessage());
+            mcpSyncClients = List.of();
+        }
         if (!mcpSyncClients.isEmpty()) {
-            ToolCallbackProvider mcpTools = new SyncMcpToolCallbackProvider(mcpSyncClients);
-            callbacks.addAll(List.of(mcpTools.getToolCallbacks()));
+            try {
+                ToolCallbackProvider mcpTools = new SyncMcpToolCallbackProvider(mcpSyncClients);
+                callbacks.addAll(List.of(mcpTools.getToolCallbacks()));
+            } catch (Exception e) {
+                logger.warn("Failed to register MCP tools; continuing with local tools only. error={}", e.getMessage());
+            }
         }
 
         return () -> callbacks.toArray(ToolCallback[]::new);

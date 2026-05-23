@@ -43,10 +43,14 @@ public class VectorSearchService {
             logger.debug("查询向量生成成功, 维度: {}", queryVector.size());
 
             if (milvusEnabled && milvusClient != null) {
-                return searchFromMilvus(queryVector, topK);
-            } else {
-                return searchFromMemory(queryVector, topK);
+                try {
+                    return searchFromMilvus(queryVector, topK);
+                } catch (Exception e) {
+                    logger.warn("Milvus search failed, falling back to in-memory vector store. error={}", e.getMessage());
+                    return searchFromMemory(queryVector, topK);
+                }
             }
+            return searchFromMemory(queryVector, topK);
 
         } catch (Exception e) {
             logger.error("搜索相似文档失败", e);

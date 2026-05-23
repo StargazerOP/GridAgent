@@ -163,6 +163,7 @@ input:focus, textarea:focus, select:focus {
 .success { background: var(--green); color: #fff; font-weight: 800; padding: 10px 14px; }
 .secondary { border: 1px solid var(--line); background: #fff; color: #4b5563; padding: 9px 12px; }
 .danger { background: rgba(211,75,88,.12); color: var(--red); padding: 9px 12px; }
+button:disabled { opacity: .62; cursor: progress; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .chip {
   border: 1px solid var(--line);
@@ -183,6 +184,50 @@ input:focus, textarea:focus, select:focus {
 }
 .card b { display: block; margin-bottom: 6px; }
 .card small { color: var(--muted); }
+.match-card {
+  border: 1px solid #dce7e2;
+  border-radius: 8px;
+  padding: 13px;
+  background: #fff;
+  min-width: 0;
+}
+.match-card h3 { margin: 0 0 6px; font-size: 14px; color: #263744; }
+.match-title { font-size: 18px; line-height: 1.3; font-weight: 900; color: #17604d; }
+.match-meter { height: 7px; border-radius: 999px; background: #e8eef3; overflow: hidden; margin: 10px 0 7px; }
+.match-meter span { display: block; height: 100%; background: linear-gradient(90deg, #2f70b7, #3aa17e); border-radius: inherit; }
+.match-card.loading { position: relative; overflow: hidden; }
+.match-card.loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.72), transparent);
+  transform: translateX(-100%);
+  animation: loadingSweep 1.35s infinite;
+}
+.loading-dots::after {
+  content: "";
+  animation: loadingDots 1.2s steps(4, end) infinite;
+}
+@keyframes loadingSweep { to { transform: translateX(100%); } }
+@keyframes loadingDots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75%, 100% { content: "..."; }
+}
+.tool-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tool-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: var(--green-soft);
+  color: #17604d;
+  font-weight: 800;
+  font-size: 12px;
+}
+.tool-chip.mock { background: var(--orange-soft); color: #92501a; }
 .workflow-canvas {
   margin-top: 14px;
   min-height: clamp(250px, 22vh, 380px);
@@ -398,6 +443,29 @@ input:focus, textarea:focus, select:focus {
   70% { box-shadow: 0 0 0 7px rgba(23,107,90,0); }
   100% { box-shadow: 0 0 0 0 rgba(23,107,90,0); }
 }
+.trace-current {
+  margin: 0 0 8px 0;
+  padding: 9px 10px;
+  border: 1px solid #d6e6f3;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(239,247,255,.96), rgba(246,252,249,.96), rgba(239,247,255,.96));
+  background-size: 220% 100%;
+  animation: traceFlow 2.8s ease-in-out infinite;
+  color: #263744;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.trace-current b { font-size: 12px; }
+.trace-current small { color: var(--muted); }
+.trace-state.done + .trace-current,
+.trace-current.done { animation: none; opacity: .76; }
+@keyframes traceFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
 .trace-list { display: grid; gap: 4px; }
 .trace-active { display: grid; gap: 4px; }
 .trace-archive {
@@ -449,6 +517,7 @@ input:focus, textarea:focus, select:focus {
   border-radius: 50%;
   animation: spin .9s linear infinite;
 }
+.trace-item.running .trace-spinner { animation: spin .9s linear infinite; }
 .trace-item.done .trace-spinner { animation: none; border-color: var(--green); background: var(--green); }
 .trace-item.status.done { opacity: .72; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -533,6 +602,53 @@ input:focus, textarea:focus, select:focus {
 .graph-lane-label { font-size: 13px; fill: #64748b; font-weight: 800; letter-spacing: 0; }
 .graph-lane-line { stroke: #e1e8ef; stroke-width: 1; stroke-dasharray: 4 6; }
 .admin-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 14px; }
+.rag-health {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(4, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.health-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+  min-height: 88px;
+}
+.health-card strong { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.health-card b { font-size: 22px; color: var(--text); }
+.health-card small { display: block; color: var(--muted); line-height: 1.45; margin-top: 5px; overflow-wrap: anywhere; }
+.health-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 900;
+}
+.health-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.health-status.up { color: #17604d; background: var(--green-soft); }
+.health-status.warn { color: #92501a; background: var(--orange-soft); }
+.health-status.down { color: var(--red); background: rgba(211,75,88,.1); }
+.status-badge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 900;
+  background: #edf2f7;
+  color: #4b5563;
+}
+.status-badge.completed { background: var(--green-soft); color: #17604d; }
+.status-badge.partial_completed { background: var(--orange-soft); color: #92501a; }
+.status-badge.failed { background: rgba(211,75,88,.1); color: var(--red); }
 .upload-box { border: 1px dashed #a8d7c7; border-radius: 8px; background: #f2fbf8; padding: 14px; display: grid; gap: 10px; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .table th, .table td { border-bottom: 1px solid #edf2f7; padding: 9px; text-align: left; vertical-align: top; }
@@ -544,7 +660,7 @@ input:focus, textarea:focus, select:focus {
   .sidebar { position: sticky; top: 0; z-index: 10; height: auto; max-height: 92px; flex-direction: row; align-items: center; overflow: auto; }
   .side-card, .stats { display: none; }
   .nav { display: flex; min-width: max-content; }
-  .chat-shell, .graph-layout, .grid-2, .admin-grid, .task-context { grid-template-columns: 1fr; }
+  .chat-shell, .graph-layout, .grid-2, .admin-grid, .task-context, .rag-health { grid-template-columns: 1fr; }
   .chat-shell { height: auto; min-height: 620px; }
   .chat-main { height: 680px; min-height: 620px; }
 }
@@ -577,7 +693,7 @@ input:focus, textarea:focus, select:focus {
       <button data-tab="graph">知识拓扑</button>
       <button data-tab="knowledge">知识库运维</button>
     </nav>
-    <div class="side-card">任务编排台展示模板匹配和计划预览；协同诊断会话才会实际运行 Agent/Graph 并返回真实执行轨迹。</div>
+    <div class="side-card">任务编排台基于 BGE 语义匹配和关键词校验生成流程草案；协同诊断会话负责运行 Agent/Graph 并沉淀执行证据。</div>
     <div class="stats">
       <div class="stat"><b id="statTemplates">0</b><small>流程模板</small></div>
       <div class="stat"><b id="statNodes">0</b><small>图谱节点</small></div>
@@ -600,13 +716,13 @@ input:focus, textarea:focus, select:focus {
           <div class="panel-head">
             <div>
               <h2>流程匹配预览</h2>
-              <p>输入调度或运维任务，系统会匹配内置流程模板并生成计划草案。这里不执行工具，真实执行请切换到“协同诊断会话”。</p>
+              <p>输入调度或运维任务，系统会基于 BGE 语义匹配和关键词校验匹配内置流程模板，并生成可解释计划草案。</p>
             </div>
             <button class="secondary" onclick="resetTask()">重置</button>
           </div>
           <div class="query-row">
             <input id="taskInput" value="主变油温异常诊断，请查询状态、告警历史并给出处置建议" placeholder="例如：负荷转供操作校核、N-1 风险分析、主变油温异常诊断">
-            <button class="primary" onclick="matchTask()">生成预览</button>
+            <button id="matchBtn" class="primary" onclick="matchTask()">生成预览</button>
           </div>
           <div class="chip-row" id="quickPrompts"></div>
           <div class="summary-grid" id="matchSummary"></div>
@@ -761,6 +877,22 @@ input:focus, textarea:focus, select:focus {
     </section>
 
     <section id="tab-knowledge" class="tab-panel">
+      <section class="panel" style="margin-bottom:14px;">
+        <div class="panel-head">
+          <div>
+            <h2>RAG 运行状态</h2>
+            <p>检查知识库依赖、向量存储模式和索引规模，必要时可执行一次端到端自检。</p>
+          </div>
+          <div class="query-row">
+            <button class="secondary" onclick="loadRagHealth()">刷新状态</button>
+            <button class="primary" onclick="runRagSelfTest()">一键自检</button>
+          </div>
+        </div>
+        <div id="ragHealthCards" class="rag-health">
+          <div class="health-card"><strong>状态</strong><small>正在读取...</small></div>
+        </div>
+        <div id="ragSelfTestResult" class="card" style="display:none;"></div>
+      </section>
       <div class="admin-grid">
         <section class="panel">
           <div class="panel-head">
@@ -852,10 +984,25 @@ var quickPrompts = [
   '新能源场站全场停电，请生成处置关注点'
 ];
 var tabMeta = {
-  task: ['任务编排台', '识别调度任务意图，生成计划预览，并联动相关知识依据。'],
-  chat: ['运行诊断控制台', '多 Agent 编排、工具调用、证据检索和诊断结论集中呈现。'],
+  task: ['任务编排台', '将自然语言任务匹配到内置流程模板，生成可解释的流程预览。'],
+  chat: ['运行诊断控制台', '真正执行 Graph、多 Agent、工具调用、RAG 检索和诊断总结。'],
   graph: ['知识拓扑', '按流程编排、工具依赖、知识约束和任务子图浏览内置知识组织。'],
   knowledge: ['知识库运维', '在同一套界面中完成文档上传、列表查看和检索测试。']
+};
+var toolLabels = {
+  getCurrentDateTime: '读取当前时间',
+  queryInternalDocs: '检索内部知识库',
+  searchSafetyRules: '检索安全规程',
+  getDeviceProfile: '查询设备档案',
+  getDeviceStatus: '查询实时状态',
+  getAlarmHistory: '查询历史告警',
+  getDeviceLogs: '查询运行日志',
+  getDefectTickets: '查询缺陷工单',
+  queryKnowledgeGraph: '查询电网知识图谱',
+  analyzeTopology: '分析拓扑影响',
+  calculatePowerFlowEstimate: '估算潮流变化',
+  checkOperationRisk: '校核操作风险',
+  generateFaultScenario: '生成故障场景'
 };
 
 function generateSessionId() { return 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
@@ -887,7 +1034,7 @@ function switchTab(tab) {
   document.getElementById('pageSubtitle').textContent = tabMeta[tab][1];
   location.hash = tab;
   if (tab === 'graph') { syncGraphModeButtons(); loadGraph(); bindGraphInteractions(); }
-  if (tab === 'knowledge') loadDocuments();
+  if (tab === 'knowledge') { loadDocuments(); loadRagHealth(); }
 }
 function initHashTab() {
   var tab = (location.hash || '').replace('#', '');
@@ -923,27 +1070,74 @@ async function loadOverview() {
 async function matchTask() {
   var query = document.getElementById('taskInput').value.trim();
   if (!query) return;
-  var payload = await fetch('/api/knowledge-org/instant-plan', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({query: query})
-  }).then(function(r){ return r.json(); });
-  taskState.payload = payload;
-  taskState.candidateNodes = payload.candidate_nodes || [];
-  taskState.selectedNodeId = taskState.candidateNodes[0] ? taskState.candidateNodes[0].id : '';
-  renderMatch(payload);
-  renderCandidateNodes(taskState.candidateNodes);
-  renderTaskSubgraph();
-  renderTaskTemplateDetail(taskState.candidateNodes[0] || null);
+  setTaskLoading(true);
+  try {
+    var payload = await fetch('/api/knowledge-org/instant-plan', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: query})
+    }).then(function(r){ return r.json(); });
+    taskState.payload = payload;
+    taskState.candidateNodes = payload.candidate_nodes || [];
+    taskState.selectedNodeId = taskState.candidateNodes[0] ? taskState.candidateNodes[0].id : '';
+    renderMatch(payload);
+    renderCandidateNodes(taskState.candidateNodes);
+    renderTaskSubgraph();
+    renderTaskTemplateDetail(taskState.candidateNodes[0] || null);
+  } catch (e) {
+    document.getElementById('matchSummary').innerHTML =
+      '<div class="match-card"><h3>生成失败</h3><div class="match-title">流程草案未生成</div><small>' + escapeHtml(e.message || e) + '</small></div>';
+    document.getElementById('workflowFlow').innerHTML = '<div class="empty">请检查后端服务、BGE embedding 服务和网络连接后重试。</div>';
+  } finally {
+    setTaskLoading(false);
+  }
+}
+function setTaskLoading(loading) {
+  var btn = document.getElementById('matchBtn');
+  if (btn) {
+    btn.disabled = loading;
+    btn.textContent = loading ? '生成中...' : '生成预览';
+  }
+  if (!loading) return;
+  document.getElementById('matchSummary').innerHTML =
+    '<div class="match-card loading">' +
+      '<h3>BGE 语义匹配</h3>' +
+      '<div class="match-title loading-dots">正在匹配流程模板</div>' +
+      '<div class="match-meter"><span style="width:72%"></span></div>' +
+      '<small>计算任务语义向量，结合关键词校验筛选近似模板。</small>' +
+    '</div>' +
+    '<div class="match-card loading">' +
+      '<h3>计划草案生成</h3>' +
+      '<div class="match-title loading-dots">正在组织执行步骤</div>' +
+      '<div class="match-meter"><span style="width:48%"></span></div>' +
+      '<small>根据命中模板、相关节点和工具能力生成流程草案。</small>' +
+    '</div>';
+  document.getElementById('workflowFlow').innerHTML =
+    '<div class="empty"><b>正在生成流程草案</b><br><small>首次匹配会初始化本地语义索引，可能稍慢。</small></div>';
+  document.getElementById('candidateNodes').innerHTML =
+    '<div class="empty">正在筛选相关流程、工具和知识节点...</div>';
+  document.getElementById('taskTemplateDetail').innerHTML =
+    '<div class="empty">等待模板匹配结果</div>';
 }
 function renderMatch(payload) {
   var template = payload.template || {};
-  document.getElementById('matchSummary').innerHTML = [
-    card('命中流程模板', template.name || '未命中', 'score: ' + (payload.score || 0) + ' · 预览未执行'),
-    card('推荐工具草案', (payload.recommended_tools || []).slice(0, 6).join(', ') || '无', '模板匹配结果，非真实工具返回')
-  ].join('');
+  var score = Number(payload.score || 0);
+  var percent = Math.max(8, Math.min(100, score * 14));
+  var tools = (payload.recommended_tools || []).slice(0, 8);
+  document.getElementById('matchSummary').innerHTML =
+    '<div class="match-card">' +
+      '<h3>匹配流程</h3>' +
+      '<div class="match-title">' + escapeHtml(template.name || '未命中') + '</div>' +
+      '<div class="match-meter"><span style="width:' + percent + '%"></span></div>' +
+      '<small>混合匹配分 ' + escapeHtml(score) + '，由 BGE 语义相似度和关键词校验综合计算。</small>' +
+    '</div>' +
+    '<div class="match-card">' +
+      '<h3>推荐能力</h3>' +
+      '<div class="tool-chips">' + (tools.length ? tools.map(renderToolChip).join('') : '<span class="tool-chip">暂无推荐</span>') + '</div>' +
+      '<small>来自命中模板和相关知识节点，用于组织计划草案。</small>' +
+    '</div>';
   var steps = payload.plan_steps || [];
-  var html = '<div class="empty" style="margin-bottom:10px;">以下是计划预览：未调用后端工具、未产生真实耗时、未写入诊断证据。</div><div class="flow-row">';
+  var html = '<div class="empty" style="margin-bottom:10px;">以下为后端生成的流程草案；执行证据、耗时和工具返回将在协同诊断会话中产生。</div><div class="flow-row">';
   steps.forEach(function(step, index) {
     var tool = step.toolName || step.tool_name || step.tool || '';
     var mock = ['calculatePowerFlowEstimate','checkOperationRisk','generateFaultScenario'].indexOf(tool) >= 0;
@@ -956,6 +1150,10 @@ function renderMatch(payload) {
   });
   html += '</div>';
   document.getElementById('workflowFlow').innerHTML = steps.length ? html : '<div class="empty">未生成可执行步骤</div>';
+}
+function renderToolChip(tool) {
+  var mock = ['calculatePowerFlowEstimate','checkOperationRisk','generateFaultScenario'].indexOf(tool) >= 0;
+  return '<span class="tool-chip ' + (mock ? 'mock' : '') + '">' + escapeHtml(tool) + '</span>';
 }
 function renderCandidateNodes(nodes) {
   var wrap = document.getElementById('candidateNodes');
@@ -1534,6 +1732,9 @@ function createTraceView(title) {
   header.className = 'trace-header';
   header.innerHTML = '<span class="trace-title">' + escapeHtml(title || '执行轨迹') + '</span>' +
     '<span class="trace-state"><i class="trace-pulse"></i><span>运行中</span></span>';
+  var current = document.createElement('div');
+  current.className = 'trace-current';
+  current.innerHTML = '<b>当前步骤</b><small>等待编排启动</small>';
   var active = document.createElement('div');
   active.className = 'trace-active';
   var archive = document.createElement('details');
@@ -1545,6 +1746,7 @@ function createTraceView(title) {
   archive.appendChild(archiveSummary);
   archive.appendChild(list);
   stepsDiv.appendChild(header);
+  stepsDiv.appendChild(current);
   stepsDiv.appendChild(active);
   stepsDiv.appendChild(archive);
   var contentDiv = document.createElement('div');
@@ -1552,7 +1754,7 @@ function createTraceView(title) {
   msgDiv.appendChild(stepsDiv);
   msgDiv.appendChild(contentDiv);
   document.getElementById('messages').appendChild(msgDiv);
-  return {msgDiv: msgDiv, stepsDiv: stepsDiv, active: active, archive: archive, archiveSummary: archiveSummary, list: list, contentDiv: contentDiv, header: header, count: 0, archivedCount: 0, activeItem: null};
+  return {msgDiv: msgDiv, stepsDiv: stepsDiv, current: current, active: active, archive: archive, archiveSummary: archiveSummary, list: list, contentDiv: contentDiv, header: header, count: 0, archivedCount: 0, activeItem: null};
 }
 function setTraceState(trace, label, done) {
   var state = trace.header.querySelector('.trace-state');
@@ -1562,27 +1764,30 @@ function setTraceState(trace, label, done) {
 }
 function appendTraceStatus(trace, text) {
   archiveActiveTraceItem(trace);
+  updateCurrentStep(trace, text, '准备中');
   var item = document.createElement('details');
-  item.className = 'trace-item status';
-  item.open = true;
+  item.className = 'trace-item status running';
+  item.open = false;
   item.innerHTML = '<summary><span class="trace-spinner"></span><span class="trace-node">' + escapeHtml(text) + '</span><span class="trace-badge">status</span></summary>';
   trace.active.appendChild(item);
   trace.activeItem = item;
   scrollMessages();
 }
 function appendTraceStep(trace, rawData) {
+  if (trace.finished) return;
   archiveActiveTraceItem(trace);
   var step = parseMaybeJson(rawData);
   trace.count += 1;
   var node = step.node || 'node';
   var agent = step.agent || inferAgentName(step);
   var meta = summarizeStep(step);
+  updateCurrentStep(trace, displayNodeName(node), meta);
   var detailHtml = buildTraceDetail(step);
   var item = document.createElement('details');
-  item.className = 'trace-item done';
-  item.open = true;
+  item.className = 'trace-item running';
+  item.open = false;
   item.innerHTML =
-    '<summary><span class="trace-spinner"></span><span><span class="trace-node">' + escapeHtml(node) + '</span>' +
+    '<summary><span class="trace-spinner"></span><span><span class="trace-node">' + escapeHtml(displayNodeName(node)) + '</span>' +
     '<span class="trace-meta">' + escapeHtml(meta) + '</span></span><span class="trace-badge">' + escapeHtml(agent) + '</span></summary>' +
     '<div class="trace-detail">' + detailHtml + '</div>';
   trace.active.appendChild(item);
@@ -1593,6 +1798,7 @@ function archiveActiveTraceItem(trace) {
   if (!trace.activeItem) return;
   trace.activeItem.open = false;
   trace.activeItem.classList.add('done');
+  trace.activeItem.classList.remove('running');
   var badge = trace.activeItem.querySelector('.trace-badge');
   if (badge && trace.activeItem.classList.contains('status')) badge.textContent = 'done';
   trace.list.appendChild(trace.activeItem);
@@ -1603,6 +1809,32 @@ function archiveActiveTraceItem(trace) {
 function updateArchiveSummary(trace, done) {
   var activeText = trace.activeItem ? '，当前步骤运行中' : '';
   trace.archiveSummary.textContent = (done ? '执行过程 ' : '已完成步骤 ') + trace.archivedCount + ' 步' + activeText;
+}
+function updateCurrentStep(trace, title, subtitle) {
+  if (!trace.current) return;
+  trace.current.classList.remove('done');
+  trace.current.innerHTML = '<b>当前步骤：' + escapeHtml(title || '运行中') + '</b><small>' + escapeHtml(subtitle || '正在处理') + '</small>';
+  setTraceState(trace, '正在处理：' + (title || '运行中'), false);
+}
+function displayNodeName(node) {
+  var map = {
+    pre_check: '输入校验',
+    context_load: '上下文装载',
+    router: '意图路由',
+    entity_extract: '实体识别',
+    alarm_rag_retrieve: '告警知识召回',
+    planner: '计划编排',
+    executor: '工具执行',
+    evidence_validation: '证据校验',
+    replanner: '重规划判断',
+    diagnosis: '综合诊断',
+    risk_assessment: '风险评估',
+    action_recommend: '处置建议',
+    safety_review: '安全复核',
+    final_response: '结果组织',
+    memory_save: '会话归档'
+  };
+  return map[node] || node || '运行中';
 }
 function parseMaybeJson(data) {
   if (!data) return {};
@@ -1668,10 +1900,13 @@ function renderCompactList(value, formatter) {
   }).join('') + '</div>';
 }
 function formatPlanStep(step, index) {
-  return (index + 1) + '. ' + (step.action || step.step || step.stepId || '计划步骤') + (step.toolName || step.tool ? ' / ' + (step.toolName || step.tool) : '');
+  var tool = step.toolName || step.tool;
+  return (index + 1) + '. ' + (step.action || step.step || step.stepId || '计划步骤') + (tool ? ' / ' + toolLabel(tool) : '');
 }
 function formatStepResult(result, index) {
-  return (index + 1) + '. ' + (result.stepId || result.toolName || result.tool || result.status || '工具结果');
+  var tool = result.toolName || result.tool;
+  var action = result.action || toolLabel(tool) || '工具结果';
+  return (index + 1) + '. ' + action + (tool ? ' / ' + toolLabel(tool) : '') + ' / ' + statusText(result.status);
 }
 function formatEvidence(item, index) {
   return (index + 1) + '. ' + (item.title || item.documentName || item.source || item.id || '证据片段');
@@ -1684,7 +1919,28 @@ function asArray(value) {
 function compactValue(value) {
   if (value == null) return '';
   if (typeof value === 'string') return truncate(value, 180);
+  if (value && typeof value === 'object') {
+    var obj = value;
+    var parts = [];
+    if (obj.status) parts.push('状态：' + statusText(obj.status));
+    if (obj.toolName || obj.tool) parts.push('能力：' + toolLabel(obj.toolName || obj.tool));
+    if (obj.durationMs || obj.duration_ms) parts.push('耗时：' + formatElapsed(obj.durationMs || obj.duration_ms));
+    if (obj.error) parts.push('异常：' + obj.error);
+    if (obj.result && parts.length < 3) parts.push('结果：' + truncate(String(obj.result).replace(/\s+/g, ' '), 120));
+    if (parts.length) return parts.join(' · ');
+  }
   return truncate(JSON.stringify(value), 220);
+}
+function toolLabel(tool) {
+  return toolLabels[tool] || tool || '';
+}
+function statusText(status) {
+  var s = String(status || '').toUpperCase();
+  if (s === 'COMPLETED' || s === 'SUCCESS') return '完成';
+  if (s === 'FAILED' || s === 'ERROR') return '失败';
+  if (s === 'PENDING') return '待执行';
+  if (s === 'SKIPPED') return '跳过';
+  return status || '-';
 }
 function prettyJson(value) {
   try { return typeof value === 'string' ? value : JSON.stringify(value, null, 2); } catch (e) { return String(value); }
@@ -1702,7 +1958,14 @@ function summarizeContext(value) {
   return parts.length ? parts.join(' · ') : '查看流程上下文';
 }
 function finishTrace(trace, label) {
-  setTraceState(trace, label || '已完成，可展开溯源', true);
+  if (trace.finished) return;
+  trace.finished = true;
+  var finalLabel = label || '已完成';
+  setTraceState(trace, finalLabel, true);
+  if (trace.current) {
+    trace.current.classList.add('done');
+    trace.current.innerHTML = '<b>执行完成</b><small>可展开下方过程查看溯源</small>';
+  }
   archiveActiveTraceItem(trace);
   trace.list.querySelectorAll('.trace-item').forEach(function(item) {
     item.classList.add('done');
@@ -1742,9 +2005,9 @@ async function sendMessage() {
     await parseSSEStream(resp, {
       status: function(data) { appendTraceStatus(trace, data); },
       step: function(data) { appendTraceStep(trace, data); },
-      result: function(data) { trace.contentDiv.textContent = data; finishTrace(trace, '已生成，可展开溯源'); },
+      result: function(data) { trace.contentDiv.textContent = data; finishTrace(trace, '已完成'); },
       error: function(data) { trace.contentDiv.textContent = '错误: ' + data; finishTrace(trace, '执行失败'); },
-      done: function() { finishTrace(trace, '已完成，可展开溯源'); }
+      done: function() { finishTrace(trace, '已完成'); }
     });
   } catch (err) {
     removeTypingIndicator();
@@ -1801,9 +2064,9 @@ async function startDiagnosisWithTask(taskId, desc) {
     await parseSSEStream(resp, {
       status: function(data) { appendTraceStatus(trace, data); },
       step: function(data) { appendTraceStep(trace, data); },
-      result: function(data) { trace.contentDiv.textContent = data; finishTrace(trace, '已生成，可展开溯源'); },
+      result: function(data) { trace.contentDiv.textContent = data; finishTrace(trace, '已完成'); },
       error: function(data) { trace.contentDiv.textContent = '错误: ' + data; finishTrace(trace, '执行失败'); },
-      done: function() { finishTrace(trace, '已完成，可展开溯源'); }
+      done: function() { finishTrace(trace, '已完成'); }
     });
   } catch (err) {
     removeTypingIndicator();
@@ -1830,6 +2093,82 @@ async function loadHistory() {
   } catch(e) {}
 }
 
+function statusClass(status) {
+  return String(status || '').toLowerCase();
+}
+function statusLabel(status) {
+  var map = {
+    COMPLETED: '完成',
+    PARTIAL_COMPLETED: '部分完成',
+    FAILED: '失败',
+    UPLOADED: '已上传',
+    CHUNKED: '已切片',
+    PENDING: '等待',
+    INDEXING: '索引中'
+  };
+  return map[status] || status || '-';
+}
+function healthPill(status) {
+  var cls = status === 'UP' ? 'up' : status === 'DOWN' ? 'down' : 'warn';
+  var label = status === 'UP' ? '正常' : status === 'DOWN' ? '异常' : '注意';
+  return '<span class="health-status ' + cls + '">' + label + '</span>';
+}
+function countValue(counts, key) {
+  return counts && counts[key] != null ? counts[key] : 0;
+}
+async function loadRagHealth() {
+  var wrap = document.getElementById('ragHealthCards');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="health-card"><strong>状态</strong><small>正在读取...</small></div>';
+  try {
+    var data = await fetch('/api/knowledge/health').then(function(r){ return r.json(); });
+    var storage = data.storage || {};
+    var counts = data.counts || {};
+    var milvus = data.milvus || {};
+    var embedding = data.embeddingApi || {};
+    var mysql = data.mysql || {};
+    var storageWarn = storage.warning || (storage.mode === 'MEMORY' ? '当前使用内存向量库，重启会丢失。' : '向量写入 Milvus，随 Docker 数据卷持久化。');
+    wrap.innerHTML =
+      '<div class="health-card"><strong>MySQL</strong>' + healthPill(mysql.status) + '<small>' + escapeHtml(mysql.message || '') + '</small></div>' +
+      '<div class="health-card"><strong>向量库</strong>' + healthPill(milvus.status) + '<small>' + escapeHtml((storage.mode || '-') + ' · ' + storageWarn) + '</small></div>' +
+      '<div class="health-card"><strong>Embedding API</strong>' + healthPill(embedding.status) + '<small>' + escapeHtml([embedding.provider, embedding.model, embedding.message].filter(Boolean).join(' · ') + (embedding.fallbackEnabled ? '；已启用本地兜底' : '')) + '</small></div>' +
+      '<div class="health-card"><strong>文档 / 切片</strong><b>' + countValue(counts, 'documents') + ' / ' + countValue(counts, 'chunks') + '</b><small>启用文档与 ACTIVE 切片</small></div>' +
+      '<div class="health-card"><strong>向量数</strong><b>' + countValue(counts, 'vectors') + '</b><small>按文档 embedding_count 汇总</small></div>';
+  } catch (e) {
+    wrap.innerHTML = '<div class="health-card"><strong>状态</strong><span class="health-status down">异常</span><small>' + escapeHtml(e.message) + '</small></div>';
+  }
+}
+async function runRagSelfTest() {
+  var box = document.getElementById('ragSelfTestResult');
+  box.style.display = 'block';
+  box.innerHTML = '<b>RAG 自检</b><small>正在上传临时文本、等待索引并检索验证...</small>';
+  try {
+    var data = await fetch('/api/knowledge/self-test', { method: 'POST' }).then(function(r){ return r.json(); });
+    var ok = data.status === 'PASS';
+    var warn = data.status === 'WARN';
+    var processing = data.processing || {};
+    var resultTitle = ok ? '通过' : warn ? '需关注' : (data.status || '完成');
+    var resultText = data.message || (ok ? '上传、索引与检索链路正常' : '自检已完成');
+    var matched = data.retrievalMatched ? '已命中' : '未命中';
+    var cleanup = data.cleanup === 'DELETED' ? '临时数据已清理' : (data.cleanup || '-');
+    box.innerHTML =
+      '<b>RAG 自检：' + escapeHtml(resultTitle) + '</b>' +
+      '<p>' + escapeHtml(resultText) + '</p>' +
+      '<div class="trace-kv">' +
+      '<span class="tag">文档 ' + escapeHtml(processing.documentStatus || '-') + '</span>' +
+      '<span class="tag">切片 ' + escapeHtml(processing.chunkCount || 0) + '</span>' +
+      '<span class="tag">向量 ' + escapeHtml(processing.embeddingCount || 0) + '</span>' +
+      '<span class="tag">检索 ' + escapeHtml(matched) + '</span>' +
+      '<span class="tag">召回 ' + escapeHtml(data.retrievalCount || 0) + ' 条</span>' +
+      '<span class="tag">耗时 ' + escapeHtml(data.durationMs || 0) + 'ms</span>' +
+      '</div><small>' + escapeHtml(cleanup) + '</small>';
+    loadRagHealth();
+    loadDocuments();
+  } catch (e) {
+    box.innerHTML = '<b>RAG 自检失败</b><p>' + escapeHtml(e.message) + '</p>';
+  }
+}
+
 async function uploadDocument() {
   var file = document.getElementById('docFile').files[0];
   if (!file) { alert('请选择文件'); return; }
@@ -1842,8 +2181,10 @@ async function uploadDocument() {
   document.getElementById('uploadResult').textContent = 'Uploading...';
   try {
     var data = await fetch('/api/knowledge/documents/upload', { method: 'POST', body: fd }).then(function(r){ return r.json(); });
-    document.getElementById('uploadResult').textContent = data.error || ('Upload success: ' + (data.documentName || data.documentId || ''));
+    document.getElementById('uploadResult').textContent = data.error || ('已提交索引任务：' + (data.documentName || data.documentId || ''));
     loadDocuments();
+    loadRagHealth();
+    if (data.documentId) setTimeout(function(){ checkDocStatus(data.documentId, true); }, 1800);
   } catch (e) {
     document.getElementById('uploadResult').textContent = 'Upload failed: ' + e.message;
   }
@@ -1860,9 +2201,9 @@ async function loadDocuments() {
       var typeCell = document.createElement('td');
       typeCell.textContent = doc.documentType || '';
       var statusCell = document.createElement('td');
-      statusCell.textContent = doc.status || '';
+      statusCell.innerHTML = '<span class="status-badge ' + statusClass(doc.status) + '">' + escapeHtml(statusLabel(doc.status)) + '</span>';
       var chunkCell = document.createElement('td');
-      chunkCell.textContent = doc.chunkCount || 0;
+      chunkCell.textContent = (doc.chunkCount || 0) + ' / ' + (doc.embeddingCount || 0);
       var actionCell = document.createElement('td');
       var statusButton = document.createElement('button');
       statusButton.className = 'secondary';
@@ -1881,10 +2222,19 @@ async function loadDocuments() {
     document.getElementById('docRows').innerHTML = '<tr><td colspan="5">Load failed: ' + escapeHtml(e.message) + '</td></tr>';
   }
 }
-async function checkDocStatus(id) {
+async function checkDocStatus(id, silent) {
   if (!id) return;
   var data = await fetch('/api/knowledge/documents/' + encodeURIComponent(id) + '/status').then(function(r){ return r.json(); });
-  alert(JSON.stringify(data, null, 2));
+  if (silent) {
+    document.getElementById('uploadResult').innerHTML =
+      '<b>' + escapeHtml(data.documentName || id) + '</b><p>状态：' + escapeHtml(statusLabel(data.status)) +
+      '，切片 ' + escapeHtml(data.chunkCount || 0) + '，向量 ' + escapeHtml(data.embeddingCount || 0) + '</p>' +
+      (data.errorMessage ? '<small>' + escapeHtml(data.errorMessage) + '</small>' : '');
+    loadDocuments();
+    loadRagHealth();
+  } else {
+    alert(JSON.stringify(data, null, 2));
+  }
 }
 async function testKnowledgeSearch() {
   var query = document.getElementById('searchQuery').value.trim();
@@ -1923,6 +2273,7 @@ loadOverview();
 loadGraph();
 loadHistory();
 loadDocuments();
+loadRagHealth();
 matchTask();
 initHashTab();
 </script>
