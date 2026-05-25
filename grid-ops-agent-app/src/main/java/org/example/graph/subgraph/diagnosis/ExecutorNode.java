@@ -103,6 +103,7 @@ public class ExecutorNode implements NodeAction {
         output.put(GraphStateKeys.EXECUTION_RESULT, evidenceBuilder.toString());
         output.put(GraphStateKeys.STEP_RESULTS, allResults);
         output.put(GraphStateKeys.PLAN_STEPS, planSteps);
+        output.put(GraphStateKeys.ADDITIONAL_STEPS, List.of());
         if (requiredFailure) {
             output.put(GraphStateKeys.NEXT_ACTION, "REPLAN");
         }

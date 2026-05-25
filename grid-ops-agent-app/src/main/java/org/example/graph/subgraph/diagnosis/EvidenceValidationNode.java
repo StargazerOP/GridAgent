@@ -36,14 +36,18 @@ public class EvidenceValidationNode implements NodeAction {
         result.put(GraphStateKeys.EVIDENCE_SCORE, score.score());
         result.put(GraphStateKeys.EVIDENCE_COVERAGE, score.coverage());
         result.put(GraphStateKeys.EVIDENCE_WARNINGS, score.warnings());
-        String nextAction = "REPLAN".equals(previousNextAction)
-                ? "REPLAN"
-                : "NEED_MORE".equals(score.decision()) ? "REPLAN" :
-                "INSUFFICIENT".equals(score.decision()) ? "FALLBACK" : "CONTINUE";
+        String nextAction;
+        if ("SUFFICIENT".equals(score.decision())) {
+            nextAction = "CONTINUE";
+        } else if ("INSUFFICIENT".equals(score.decision())) {
+            nextAction = "FALLBACK";
+        } else {
+            nextAction = "REPLAN";
+        }
         result.put(GraphStateKeys.NEXT_ACTION, nextAction);
 
-        logger.info("EvidenceValidationNode: score={}, decision={}, warnings={}",
-                score.score(), score.decision(), score.warnings().size());
+        logger.info("EvidenceValidationNode: score={}, decision={}, previousNextAction={}, nextAction={}, warnings={}",
+                score.score(), score.decision(), previousNextAction, nextAction, score.warnings().size());
         return result;
     }
 

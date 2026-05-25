@@ -316,7 +316,110 @@ Bash / Git Bash / WSL：
 export DEEPSEEK_API_KEY="你的 DeepSeek API Key"
 ```
 
-### 3. 启动基础设施
+### 3. 启动系统（推荐方式）
+
+推荐把 Docker 基础设施交给 Docker Desktop 管理，然后用脚本启动本地 BGE、MCP Server 和主应用。这是当前最稳的 Windows 启动方式。
+
+先在 Docker Desktop 中启动下面这些必需容器：
+
+| 组件 | 需要状态 | 端口 |
+| --- | --- | --- |
+| `mysql-gridops` | Running | `3307:3306` |
+| `milvus-standalone` | Running / healthy | `19530:19530` |
+| `milvus-minio` | Running / healthy | `9000:9000`、`9001:9001` |
+| `milvus-etcd` | Running / healthy | 内部端口即可 |
+
+可选容器：
+
+| 组件 | 是否必需 | 说明 |
+| --- | --- | --- |
+| `milvus-attu` | 否 | Milvus Web 管理界面，常见地址是 `http://localhost:8001`，只用于查看 collection/schema/索引状态，不影响主应用运行。 |
+| `redis-gridops` | 否 | 预留缓存组件，当前核心链路没有直接读写 Redis，停着也可以。 |
+
+然后在项目根目录执行：
+
+```powershell
+.\scripts\start-gridops.ps1 -SkipDocker
+```
+
+这个命令只负责启动和检查本地运行组件：
+
+| 步骤 | 说明 |
+| --- | --- |
+| 启动本地 BGE-M3 | 启动 `scripts\bge_m3_embedding_server.py`，端口 `9910`。 |
+| 启动 MCP Server | 启动 `power-tools-mcp-server`，端口 `9901`。 |
+| 启动主应用 | 启动 `grid-ops-agent-app`，端口 `9900`。 |
+| 打开页面 | 默认打开 `http://localhost:9900/`。 |
+
+日常启动建议固定使用 `-SkipDocker`。如果你希望脚本也尝试启动 Docker 组件，可以执行 `.\scripts\start-gridops.ps1`，但在部分 Windows / Docker Desktop 环境下，`docker compose up -d` 可能比手动在 Docker Desktop 中启动更慢或被 Docker warning 干扰。
+
+常用参数：
+
+```powershell
+.\scripts\start-gridops.ps1 -SkipDocker      # 不启动 Docker 组件，只启动本地 BGE/MCP/主应用
+.\scripts\start-gridops.ps1 -SkipDocker -NoBrowser  # 只启动，不自动打开浏览器
+```
+
+查看状态：
+
+```powershell
+.\scripts\status-gridops.ps1
+```
+
+正常状态示例：
+
+```text
+Main app          9900   True   HTTP 200
+MCP server        9901   True
+BGE-M3 embedding  9910   True   HTTP 200
+MySQL             3307   True
+Milvus            19530  True
+```
+
+如果 `Redis` 显示停止，不影响当前核心链路；如果 `Attu` 停止，只影响 Milvus Web 管理界面，不影响主应用连接 Milvus。
+
+如果 Docker Desktop 里后来才启动 Milvus，而主应用已经先启动过，知识库运维页可能会显示“向量库异常 / 当前使用内存向量库”。这时重新执行：
+
+```powershell
+.\scripts\start-gridops.ps1 -SkipDocker
+```
+
+脚本会检测到“Milvus 已可用但主应用仍使用内存兜底”的状态，并自动重启 `9900` 主应用，让 RAG 切回 Milvus。
+
+停止本地服务：
+
+```powershell
+.\scripts\stop-gridops.ps1
+```
+
+如果连 Docker 基础设施也要一起停掉：
+
+```powershell
+.\scripts\stop-gridops.ps1 -WithDocker
+```
+
+日志统一写入：
+
+```text
+logs/
+```
+
+### 4. 验证服务
+
+```powershell
+curl http://127.0.0.1:9910/health
+curl http://localhost:9900/actuator/health
+curl http://localhost:9900/api/knowledge/health
+curl http://localhost:9900/milvus/health
+```
+
+主应用健康检查返回 `{"status":"UP"}` 即表示服务启动成功。
+
+## 手动启动与排障步骤（可选）
+
+下面的步骤用于脚本失败时定位问题；日常启动优先使用 `.\scripts\start-gridops.ps1`。
+
+### 1. 启动基础设施
 
 MySQL：
 
@@ -361,7 +464,7 @@ milvus:
   enabled: false
 ```
 
-### 4. 启动本地 BGE-M3 Embedding 服务
+### 2. 启动本地 BGE-M3 Embedding 服务
 
 RAG 向量化默认调用本地 BGE-M3。该服务是独立进程，每次完整启动系统时都需要启动一次：
 
@@ -387,13 +490,13 @@ curl http://127.0.0.1:9910/health
 {"status":"UP","model":"bge-m3","dimension":1024}
 ```
 
-### 5. 编译项目
+### 3. 编译项目
 
 ```bash
 mvn clean compile
 ```
 
-### 6. 启动 MCP 工具服务
+### 4. 启动 MCP 工具服务
 
 必须先启动 MCP Server：
 
@@ -407,7 +510,7 @@ mvn -pl power-tools-mcp-server spring-boot:run
 http://localhost:9901
 ```
 
-### 7. 启动主应用
+### 5. 启动主应用
 
 另开一个终端：
 
@@ -437,7 +540,7 @@ http://localhost:9900/
 | 知识库管理 | 上传 `aiops-docs/` 或自定义文档，构建 RAG 检索索引。 |
 | 观测与治理 | 查看工具、Skill、审批、Trace 等运行信息。 |
 
-### 8. 验证服务
+### 6. 验证服务
 
 ```bash
 curl http://127.0.0.1:9910/health
@@ -449,32 +552,23 @@ curl http://localhost:9901/sse -H "Accept: text/event-stream"
 
 主应用健康检查返回 `{"status":"UP"}` 即表示服务启动成功。
 
-## Windows 后台启动示例
+## Windows 脚本命令
 
-PowerShell 后台启动本地 BGE-M3、MCP Server 和主应用：
+推荐使用仓库内置脚本管理本地服务：
 
 ```powershell
-Start-Process powershell -ArgumentList "python scripts\bge_m3_embedding_server.py *> bge-m3-embedding.log"
-Start-Sleep -Seconds 5
-Start-Process powershell -ArgumentList "mvn -pl power-tools-mcp-server spring-boot:run *> mcp-server.log"
-Start-Sleep -Seconds 15
-Start-Process powershell -ArgumentList "mvn -pl grid-ops-agent-app spring-boot:run *> server.log"
+.\scripts\start-gridops.ps1       # 启动完整演示环境
+.\scripts\status-gridops.ps1      # 查看端口、健康检查和容器状态
+.\scripts\stop-gridops.ps1        # 停止 BGE、MCP Server 和主应用
+.\scripts\stop-gridops.ps1 -WithDocker  # 同时停止 MySQL、Redis、Milvus/Attu
 ```
 
 查看日志：
 
 ```powershell
-Get-Content .\bge-m3-embedding.log -Wait
-Get-Content .\mcp-server.log -Wait
-Get-Content .\server.log -Wait
-```
-
-停止三个本地服务：
-
-```powershell
-Get-NetTCPConnection -LocalPort 9900,9901,9910 -State Listen |
-  Select-Object -ExpandProperty OwningProcess -Unique |
-  ForEach-Object { Stop-Process -Id $_ -Force }
+Get-Content .\logs\bge-m3-embedding.log -Wait
+Get-Content .\logs\mcp-server.log -Wait
+Get-Content .\logs\server.log -Wait
 ```
 
 ## Linux / macOS / Git Bash 辅助命令

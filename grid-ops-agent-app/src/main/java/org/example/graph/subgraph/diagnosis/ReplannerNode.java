@@ -65,8 +65,11 @@ public class ReplannerNode implements NodeAction {
 
                 判断标准：
                 - 如果所有步骤都成功执行且结果符合预期，选择CONTINUE
-                - 如果有关键步骤失败或结果不符合预期，选择REPLAN并给出补充步骤
+                - 如果已有实时状态、知识库/规程、日志/告警中的任意两类有效证据，且能形成初步判断，选择CONTINUE
+                - 只有关键证据完全缺失时才选择REPLAN并给出少量补充步骤
                 - 如果多次补充仍无法获取有效信息，选择FALLBACK
+                - 不要重复查询已经失败过的同一工具和同一参数
+                - additional_steps最多2个
 
                 请严格按以下JSON格式输出，不要输出其他内容：
                 {"next_action": "CONTINUE或REPLAN或FALLBACK", "reason": "决策理由", "additional_steps": [{"step": 步骤编号, "action": "步骤描述", "tool": "工具名称", "params": {"参数名": "参数值"}, "purpose": "步骤目的", "expected": "预期结果"}]}
@@ -80,14 +83,15 @@ public class ReplannerNode implements NodeAction {
         if (!stepResults.isEmpty()) {
             userMessage.append("已执行的步骤及结果：\n");
             for (Map<String, Object> step : stepResults) {
-                userMessage.append("步骤").append(step.getOrDefault("step", "?")).append(": ")
+                userMessage.append("步骤").append(first(step, "stepNo", "step_no", "step", "?")).append(": ")
                         .append(step.getOrDefault("action", "?")).append(" [")
                         .append(step.getOrDefault("status", "?")).append("]\n");
                 if (step.containsKey("result")) {
                     String result = String.valueOf(step.get("result"));
                     userMessage.append("  结果: ").append(result, 0, Math.min(result.length(), 200)).append("\n");
                 }
-                userMessage.append("  符合预期: ").append(step.getOrDefault("match_expected", "?")).append("\n");
+                userMessage.append("  工具: ").append(first(step, "toolName", "tool_name", "tool", "?")).append("\n");
+                userMessage.append("  符合预期: ").append(first(step, "matchExpected", "match_expected", "?")).append("\n");
             }
             userMessage.append("\n");
         } else if (!evidence.isEmpty()) {
@@ -130,6 +134,9 @@ public class ReplannerNode implements NodeAction {
                     }
                     for (Object item : list) {
                         if (item instanceof Map<?, ?> map) {
+                            if (additionalSteps.size() >= 2) {
+                                break;
+                            }
                             Map<String, Object> step = new HashMap<>();
                             for (Map.Entry<?, ?> entry : map.entrySet()) {
                                 step.put(String.valueOf(entry.getKey()), entry.getValue());
@@ -154,5 +161,21 @@ public class ReplannerNode implements NodeAction {
             }
             return Map.of("next_action", "CONTINUE", "loop_count", loopCount + 1);
         }
+    }
+
+    private Object first(Map<String, Object> map, String... keys) {
+        String fallback = "";
+        int limit = keys.length;
+        if (keys.length > 0 && !map.containsKey(keys[keys.length - 1])) {
+            fallback = keys[keys.length - 1];
+            limit = keys.length - 1;
+        }
+        for (int i = 0; i < limit; i++) {
+            String key = keys[i];
+            if (map.containsKey(key) && map.get(key) != null) {
+                return map.get(key);
+            }
+        }
+        return fallback;
     }
 }

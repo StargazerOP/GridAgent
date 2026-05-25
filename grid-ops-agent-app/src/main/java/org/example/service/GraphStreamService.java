@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 封装 CompiledGraph.stream() 为 SSE 友好的回调接口。
@@ -56,6 +57,7 @@ public class GraphStreamService {
 
         NodeOutput[] lastOutput = {null};
         long startedAt = System.currentTimeMillis();
+        AtomicLong lastNodeAt = new AtomicLong(startedAt);
         AtomicInteger sequence = new AtomicInteger(0);
 
         nodeFlux.doOnNext(nodeOutput -> {
@@ -64,6 +66,8 @@ public class GraphStreamService {
             String agentName = nodeOutput.agent();
 
             if (nodeOutput.isSTART()) {
+                long now = System.currentTimeMillis();
+                lastNodeAt.set(now);
                 callback.onStart();
                 return;
             }
@@ -73,6 +77,8 @@ public class GraphStreamService {
             }
 
             OverAllState state = nodeOutput.state();
+            long now = System.currentTimeMillis();
+            long fallbackNodeDuration = Math.max(1L, now - lastNodeAt.getAndSet(now));
 
             // 提取节点输出的关键状态信息
             Map<String, Object> stepInfo = new LinkedHashMap<>();
@@ -80,15 +86,18 @@ public class GraphStreamService {
             stepInfo.put("trace_id", initialState.get("task_id"));
             stepInfo.put("sequence", sequence.incrementAndGet());
             stepInfo.put("status", "COMPLETED");
-            stepInfo.put("timestamp", System.currentTimeMillis());
-            stepInfo.put("elapsed_ms", System.currentTimeMillis() - startedAt);
-            stepInfo.put("cumulative_elapsed_ms", System.currentTimeMillis() - startedAt);
+            stepInfo.put("timestamp", now);
+            stepInfo.put("elapsed_ms", now - startedAt);
+            stepInfo.put("cumulative_elapsed_ms", now - startedAt);
             stepInfo.put("node_category", classifyNode(nodeName));
             if (agentName != null && !agentName.isEmpty()) {
                 stepInfo.put("agent", agentName);
             }
-            state.value("_last_node_duration_ms").ifPresent(val -> stepInfo.put("node_duration_ms", val));
-            state.value("_last_node_name").ifPresent(val -> stepInfo.put("measured_node", val));
+            Object measuredNode = state.value("_last_node_name").orElse(null);
+            Object observedDuration = state.value("_last_node_duration_ms").orElse(null);
+            long nodeDuration = reliableDuration(nodeName, measuredNode, observedDuration, fallbackNodeDuration);
+            stepInfo.put("node_duration_ms", nodeDuration);
+            stepInfo.put("measured_node", measuredNode != null ? measuredNode : nodeName);
 
             // 提取常用的状态键用于前端展示
             extractIfPresent(state, stepInfo, "intent");
@@ -155,6 +164,31 @@ public class GraphStreamService {
             return "review";
         }
         return "agent";
+    }
+
+    private long reliableDuration(String nodeName, Object measuredNode, Object observedDuration, long fallbackNodeDuration) {
+        Long observed = toLong(observedDuration);
+        boolean matchesNode = measuredNode == null
+                || nodeName == null
+                || nodeName.equals(String.valueOf(measuredNode));
+        if (matchesNode && observed != null && observed > 0) {
+            return observed;
+        }
+        return Math.max(1L, fallbackNodeDuration);
+    }
+
+    private Long toLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /**

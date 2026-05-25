@@ -552,8 +552,47 @@ button:disabled { opacity: .62; cursor: progress; }
 .trace-raw[open] summary { margin-bottom: 8px; }
 .final-answer {
   padding-top: 8px;
-  white-space: pre-wrap;
   line-height: 1.65;
+}
+.markdown-answer {
+  line-height: 1.72;
+  color: #263544;
+}
+.markdown-answer h3 {
+  margin: 14px 0 6px;
+  font-size: 15px;
+  color: #17212b;
+  font-weight: 900;
+}
+.markdown-answer h3:first-child { margin-top: 0; }
+.markdown-answer p { margin: 7px 0; }
+.markdown-answer ul,
+.markdown-answer ol {
+  margin: 7px 0 9px 20px;
+  padding: 0;
+}
+.markdown-answer li { margin: 5px 0; padding-left: 2px; }
+.markdown-answer strong { color: #17212b; font-weight: 900; }
+.markdown-answer hr {
+  border: 0;
+  border-top: 1px solid #dfe8f3;
+  margin: 14px 0;
+}
+.markdown-answer code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  background: #eef5ff;
+  border: 1px solid #d8e7fb;
+  border-radius: 5px;
+  padding: 1px 5px;
+  color: #245fae;
+}
+.markdown-answer pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f4f8fc;
+  border: 1px solid #dfe8f3;
+  border-radius: 8px;
+  padding: 10px;
 }
 .chat-input { border-top: 1px solid var(--line); padding: 14px; display: flex; gap: 10px; background: #fbfdff; }
 .chat-input textarea { flex: 1; resize: none; min-height: 48px; max-height: 140px; }
@@ -1007,6 +1046,67 @@ var toolLabels = {
 
 function generateSessionId() { return 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
 function escapeHtml(text) { var d = document.createElement('div'); d.textContent = text == null ? '' : String(text); return d.innerHTML; }
+function renderInlineMarkdown(text) {
+  return escapeHtml(text)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+function renderMarkdown(text) {
+  var lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+  var html = [];
+  var listType = null;
+  function closeList() {
+    if (listType) {
+      html.push('</' + listType + '>');
+      listType = null;
+    }
+  }
+  lines.forEach(function(rawLine) {
+    var line = rawLine.trim();
+    var ordered = line.match(/^\d+\.\s+(.+)$/);
+    var unordered = line.match(/^[-*]\s+(.+)$/);
+    if (!line) {
+      closeList();
+      return;
+    }
+    if (/^---+$/.test(line)) {
+      closeList();
+      html.push('<hr>');
+      return;
+    }
+    if (/^#{1,4}\s+/.test(line)) {
+      closeList();
+      html.push('<h3>' + renderInlineMarkdown(line.replace(/^#{1,4}\s+/, '')) + '</h3>');
+      return;
+    }
+    if (ordered) {
+      if (listType !== 'ol') {
+        closeList();
+        html.push('<ol>');
+        listType = 'ol';
+      }
+      html.push('<li>' + renderInlineMarkdown(ordered[1]) + '</li>');
+      return;
+    }
+    if (unordered) {
+      if (listType !== 'ul') {
+        closeList();
+        html.push('<ul>');
+        listType = 'ul';
+      }
+      html.push('<li>' + renderInlineMarkdown(unordered[1]) + '</li>');
+      return;
+    }
+    closeList();
+    html.push('<p>' + renderInlineMarkdown(line) + '</p>');
+  });
+  closeList();
+  return html.join('');
+}
+function setMarkdownContent(el, text) {
+  el.classList.add('markdown-answer');
+  el.innerHTML = renderMarkdown(text);
+}
 function truncate(text, max) { text = text || ''; return text.length > max ? text.slice(0, max - 1) + '…' : text; }
 function zoomTier(zoom) {
   if (zoom >= 2.4) return 4;
@@ -1705,7 +1805,11 @@ function addMessage(content, isUser) {
   if (empty) empty.remove();
   var div = document.createElement('div');
   div.className = 'message ' + (isUser ? 'user-message' : 'ai-message');
-  div.textContent = content;
+  if (isUser) {
+    div.textContent = content;
+  } else {
+    setMarkdownContent(div, content);
+  }
   c.appendChild(div);
   c.scrollTop = c.scrollHeight;
 }
@@ -1871,7 +1975,8 @@ function summarizeStep(step) {
   if (node.indexOf('safety') >= 0) info.push('执行安全复核');
   if (node.indexOf('final') >= 0) info.push('组织最终回答');
   if (!info.length && step.intent) info.push('意图 ' + step.intent);
-  if (step.node_duration_ms !== undefined) info.push('节点耗时 ' + formatElapsed(step.node_duration_ms));
+  var nodeDuration = Number(step.node_duration_ms);
+  if (Number.isFinite(nodeDuration) && nodeDuration > 0) info.push('节点耗时 ' + formatElapsed(nodeDuration));
   if (step.cumulative_elapsed_ms !== undefined || step.elapsed_ms !== undefined) {
     info.push('累计 ' + formatElapsed(step.cumulative_elapsed_ms !== undefined ? step.cumulative_elapsed_ms : step.elapsed_ms));
   }
@@ -2005,8 +2110,8 @@ async function sendMessage() {
     await parseSSEStream(resp, {
       status: function(data) { appendTraceStatus(trace, data); },
       step: function(data) { appendTraceStep(trace, data); },
-      result: function(data) { trace.contentDiv.textContent = data; finishTrace(trace, '已完成'); },
-      error: function(data) { trace.contentDiv.textContent = '错误: ' + data; finishTrace(trace, '执行失败'); },
+      result: function(data) { setMarkdownContent(trace.contentDiv, data); finishTrace(trace, '已完成'); },
+      error: function(data) { setMarkdownContent(trace.contentDiv, '错误: ' + data); finishTrace(trace, '执行失败'); },
       done: function() { finishTrace(trace, '已完成'); }
     });
   } catch (err) {
@@ -2064,8 +2169,8 @@ async function startDiagnosisWithTask(taskId, desc) {
     await parseSSEStream(resp, {
       status: function(data) { appendTraceStatus(trace, data); },
       step: function(data) { appendTraceStep(trace, data); },
-      result: function(data) { trace.contentDiv.textContent = data; finishTrace(trace, '已完成'); },
-      error: function(data) { trace.contentDiv.textContent = '错误: ' + data; finishTrace(trace, '执行失败'); },
+      result: function(data) { setMarkdownContent(trace.contentDiv, data); finishTrace(trace, '已完成'); },
+      error: function(data) { setMarkdownContent(trace.contentDiv, '错误: ' + data); finishTrace(trace, '执行失败'); },
       done: function() { finishTrace(trace, '已完成'); }
     });
   } catch (err) {

@@ -135,12 +135,16 @@ public class ActionRecommendNode implements NodeAction {
     }
 
     private String buildExecutionSummary(List<Map<String, Object>> stepResults, String evidence) {
-        long completed = stepResults.stream().filter(step -> "COMPLETED".equalsIgnoreCase(String.valueOf(step.get("status")))).count();
-        long failed = stepResults.stream().filter(step -> "FAILED".equalsIgnoreCase(String.valueOf(step.get("status")))).count();
+        List<Map<String, Object>> effectiveResults = distinctResults(stepResults);
+        long completed = effectiveResults.stream().filter(step -> "COMPLETED".equalsIgnoreCase(String.valueOf(step.get("status")))).count();
+        long failed = effectiveResults.stream().filter(step -> "FAILED".equalsIgnoreCase(String.valueOf(step.get("status")))).count();
         StringBuilder summary = new StringBuilder();
-        summary.append("本轮新增工具调用 ").append(stepResults.size())
+        summary.append("本轮有效工具调用 ").append(effectiveResults.size())
                 .append(" 项，成功 ").append(completed)
                 .append(" 项，失败 ").append(failed).append(" 项。");
+        if (failed > 0) {
+            summary.append("失败主要来自：").append(failureSummary(effectiveResults)).append("。");
+        }
         if (evidence.contains("MOCK_RISK_CHECK") || evidence.contains("MOCK_SCENARIO_GENERATION") || evidence.contains("MOCK_ESTIMATE")) {
             summary.append("检测到模拟算子结果，页面溯源中可查看具体调用过程。");
         }
@@ -148,6 +152,44 @@ public class ActionRecommendNode implements NodeAction {
             summary.append("部分图谱查询未命中实体，建议补充设备台账或图谱节点。");
         }
         return summary.toString();
+    }
+
+    private List<Map<String, Object>> distinctResults(List<Map<String, Object>> stepResults) {
+        Map<String, Map<String, Object>> unique = new java.util.LinkedHashMap<>();
+        for (Map<String, Object> result : stepResults) {
+            String stepId = String.valueOf(result.getOrDefault("stepId", result.getOrDefault("step_id", "")));
+            String stepNo = String.valueOf(result.getOrDefault("stepNo", result.getOrDefault("step_no", "")));
+            String tool = String.valueOf(result.getOrDefault("toolName", result.getOrDefault("tool_name", result.getOrDefault("tool", ""))));
+            String action = String.valueOf(result.getOrDefault("action", ""));
+            String key = !stepId.isBlank() ? stepId : stepNo + "|" + tool + "|" + action;
+            unique.put(key, result);
+        }
+        return new ArrayList<>(unique.values());
+    }
+
+    private String failureSummary(List<Map<String, Object>> stepResults) {
+        Map<String, Long> counts = stepResults.stream()
+                .filter(step -> "FAILED".equalsIgnoreCase(String.valueOf(step.get("status"))))
+                .collect(java.util.stream.Collectors.groupingBy(this::readableErrorType, java.util.LinkedHashMap::new, java.util.stream.Collectors.counting()));
+        if (counts.isEmpty()) {
+            return "无";
+        }
+        return counts.entrySet().stream()
+                .limit(3)
+                .map(entry -> entry.getKey() + " " + entry.getValue() + " 项")
+                .collect(java.util.stream.Collectors.joining("、"));
+    }
+
+    private String readableErrorType(Map<String, Object> step) {
+        String type = String.valueOf(step.getOrDefault("errorType", step.getOrDefault("error_type", "")));
+        return switch (type) {
+            case "TOOL_NOT_FOUND" -> "工具未注册";
+            case "TOOL_RESULT_SHAPE_MISMATCH" -> "返回字段不完整";
+            case "TOOL_ERROR" -> "工具返回错误";
+            case "TOOL_TIMEOUT" -> "工具超时";
+            case "EMPTY_TOOL_RESULT" -> "工具无返回";
+            default -> type.isBlank() || "null".equals(type) ? "未分类错误" : type;
+        };
     }
 
     private List<Map<String, Object>> readList(Object value) {
