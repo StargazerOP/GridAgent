@@ -1,0 +1,131 @@
+{
+  "TR-110KV-001": [
+    {
+      "ticketId": "DEF202605170001",
+      "createTime": "2026-05-17T09:30:00",
+      "defectType": "冷却器控制回路异常",
+      "defectLevel": "一般缺陷",
+      "description": "#1主变冷却器#2风机控制回路接触器KM2间歇性无法吸合。测量线圈电阻正常（48Ω），控制电压DC110V正常。初步判断为接触器机械卡涩或辅助触点接触不良。",
+      "responsiblePerson": "李伟",
+      "status": "待处理",
+      "suggestedMeasure": "更换KM2接触器或拆解检查机械部件，同时检查辅助触点",
+      "similarity": "与本次油温异常告警高度相关 —— 冷却器故障直接导致散热能力下降"
+    },
+    {
+      "ticketId": "DEF202604280001",
+      "createTime": "2026-04-28T14:00:00",
+      "defectType": "冷却器风机过载",
+      "defectLevel": "一般缺陷",
+      "description": "#1主变冷却器#2风机运行电流12.5A超过额定10A。检查发现风机轴承润滑脂干涸，转动阻力增大。",
+      "responsiblePerson": "李伟",
+      "status": "已处理",
+      "suggestedMeasure": "清洗轴承并重新加注高温润滑脂",
+      "actualMeasure": "已加注7014高温润滑脂，处理后运行电流降至8.3A，恢复正常",
+      "similarity": "与本次油温异常告警相关 —— 同一风机反复出现问题"
+    },
+    {
+      "ticketId": "DEF202604150001",
+      "createTime": "2026-04-15T10:00:00",
+      "defectType": "变压器油位偏低",
+      "defectLevel": "一般缺陷",
+      "description": "#1主变油枕油位指示45%，低于正常下限50%。检查未发现明显渗漏点。可能原因为上次取油样后未及时补油。",
+      "responsiblePerson": "张建国",
+      "status": "已处理",
+      "suggestedMeasure": "补充25#变压器油至正常油位，继续观察",
+      "actualMeasure": "补充变压器油约60L，油位恢复至65%",
+      "similarity": "与本告警间接相关 —— 油量变化可能影响散热效率"
+    },
+    {
+      "ticketId": "DEF202601050001",
+      "createTime": "2026-01-05T08:00:00",
+      "defectType": "温控器动作不灵敏",
+      "defectLevel": "一般缺陷",
+      "description": "#1主变温控器在油温变化时需要8秒才能切换冷却器档位，超过3秒标准。检查发现温控器触点有氧化现象。",
+      "responsiblePerson": "李伟",
+      "status": "已处理",
+      "suggestedMeasure": "清洁温控器触点，校准切换温度设定值",
+      "actualMeasure": "已清洁触点并用精密电子清洁剂处理，校准后切换延迟恢复至2秒以内",
+      "similarity": "与本告警间接相关 —— 温控器响应延迟可能导致冷却器未及时投入"
+    }
+  ],
+  "TR-110KV-002": [
+    {
+      "ticketId": "DEF202602140001",
+      "createTime": "2026-02-15T09:00:00",
+      "defectType": "油中溶解气体异常",
+      "defectLevel": "重要缺陷",
+      "description": "油色谱在线监测显示乙炔含量0.8ppm超过注意值0.5ppm。取样送检确认。三比值法分析编码为102，判断为OLTC切换电弧产气，非内部放电。",
+      "responsiblePerson": "李伟",
+      "status": "已处理",
+      "suggestedMeasure": "跟踪监测，缩短色谱检测周期至每月一次",
+      "actualMeasure": "已执行跟踪监测方案，后续两个月数据稳定在0.6-0.9ppm范围",
+      "similarity": "无直接关联"
+    }
+  ],
+  "KG-10KV-001": [
+    {
+      "ticketId": "DEF202605120001",
+      "createTime": "2026-05-12T15:00:00",
+      "defectType": "开关柜内部过热",
+      "defectLevel": "重要缺陷",
+      "description": "#1进线开关柜红外测温发现母线接头处温度42℃，环境温度28℃，温升14K超过标准10K。紧固螺栓力矩有不均匀现象。",
+      "responsiblePerson": "李伟",
+      "status": "已处理",
+      "suggestedMeasure": "停电后全面紧固母线连接螺栓，涂抹导电膏",
+      "actualMeasure": "已紧固所有母线接头螺栓至标准力矩，处理后温升降至8K",
+      "similarity": "与局放异常告警相关 —— 接触不良可能同时导致发热和局放"
+    },
+    {
+      "ticketId": "DEF202603150001",
+      "createTime": "2026-03-15T10:30:00",
+      "defectType": "开关柜湿度偏高",
+      "defectLevel": "一般缺陷",
+      "description": "连续阴雨天气导致#1进线开关柜湿度75%超过70%标准。柜内凝露风险增加。",
+      "responsiblePerson": "王强",
+      "status": "已处理",
+      "suggestedMeasure": "启动除湿装置，检查柜体密封条",
+      "actualMeasure": "已启动除湿装置运行24小时，湿度降至58%。检查密封条发现一处老化，已更换",
+      "similarity": "与局放异常告警相关 —— 高湿度环境加速绝缘老化"
+    }
+  ],
+  "DL-110KV-001": [
+    {
+      "ticketId": "DEF202605150001",
+      "createTime": "2026-05-15T08:00:00",
+      "defectType": "SF6气压偏低",
+      "defectLevel": "重要缺陷",
+      "description": "110kV #1主变高压侧断路器SF6气压持续缓慢下降，当前0.53MPa接近告警值0.52MPa。色谱检漏发现密封面微漏。",
+      "responsiblePerson": "张建国",
+      "status": "待处理",
+      "suggestedMeasure": "安排停电后更换密封圈并补气至额定压力0.60MPa",
+      "similarity": "无直接关联，但影响断路器操作可靠性"
+    }
+  ],
+  "XL-110KV-001": [
+    {
+      "ticketId": "DEF202603080001",
+      "createTime": "2026-03-09T08:30:00",
+      "defectType": "线路覆冰",
+      "defectLevel": "重要缺陷",
+      "description": "寒潮天气导致城东I线#18-#25塔段线路覆冰，最大厚度8mm，超过5mm设计值。需启动直流融冰。",
+      "responsiblePerson": "王强",
+      "status": "已处理",
+      "suggestedMeasure": "启动直流融冰装置，必要时配合机械除冰",
+      "actualMeasure": "已启动直流融冰，运行约40分钟后覆冰脱落。后续巡线确认无损伤",
+      "similarity": "无直接关联"
+    }
+  ],
+  "CB-10KV-001": [
+    {
+      "ticketId": "DEF202605140001",
+      "createTime": "2026-05-15T08:00:00",
+      "defectType": "电容器组电流不平衡",
+      "defectLevel": "重要缺陷",
+      "description": "#1电容器组C相电流148A明显低于A相165A和B相172A，不平衡度超过10%。电容器组在线监测显示C相有2个电容单元容值下降。",
+      "responsiblePerson": "张建国",
+      "status": "待处理",
+      "suggestedMeasure": "停电后用兆欧表和电容表逐一测量C相各电容单元，更换损坏单元",
+      "similarity": "无直接关联"
+    }
+  ]
+}

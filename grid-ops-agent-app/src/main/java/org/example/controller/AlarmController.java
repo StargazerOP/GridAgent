@@ -8,9 +8,11 @@ import org.example.checkpoint.CheckpointService;
 import org.example.entity.CheckpointRecord;
 import org.example.graph.GraphStateKeys;
 import org.example.service.GraphStreamService;
+import org.example.service.MockDataLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -28,6 +30,7 @@ public class AlarmController {
     private static final Logger logger = LoggerFactory.getLogger(AlarmController.class);
 
     @Autowired
+    @Qualifier("compiledAlarmDiagnosisGraph")
     private CompiledGraph compiledGraph;
 
     @Autowired
@@ -38,6 +41,9 @@ public class AlarmController {
 
     @Autowired
     private AlarmTaskMapper alarmTaskMapper;
+
+    @Autowired
+    private MockDataLoader mockDataLoader;
 
     private final ExecutorService diagnosisExecutor = Executors.newCachedThreadPool();
 
@@ -99,7 +105,30 @@ public class AlarmController {
                 }
 
                 final String diagnosisInput;
+                final Map<String, Object> extraState = new LinkedHashMap<>();
+
                 if (alarmTask != null) {
+                    // Pre-fetch device profile and status for context
+                    String deviceId = alarmTask.getDeviceId();
+                    StringBuilder deviceContext = new StringBuilder();
+                    if (deviceId != null && !deviceId.isBlank()) {
+                        try {
+                            Map<String, Object> profile = mockDataLoader.getDeviceProfileOrDefault(deviceId);
+                            Map<String, Object> status = mockDataLoader.getDeviceStatusMock(deviceId);
+                            deviceContext.append("\n[预取] 设备档案:\n").append(new com.fasterxml.jackson.databind.ObjectMapper()
+                                    .writerWithDefaultPrettyPrinter().writeValueAsString(profile));
+                            deviceContext.append("\n[预取] 设备状态:\n").append(new com.fasterxml.jackson.databind.ObjectMapper()
+                                    .writerWithDefaultPrettyPrinter().writeValueAsString(status));
+                            extraState.put("device_id", deviceId);
+                            extraState.put("device_profile", profile);
+                            extraState.put("device_status", status);
+                            extraState.put("alarm_type", alarmTask.getAlarmType());
+                            extraState.put("alarm_level", alarmTask.getAlarmLevel());
+                        } catch (Exception e) {
+                            logger.warn("设备预取失败: {}", e.getMessage());
+                        }
+                    }
+
                     diagnosisInput = String.format(
                             "请对以下告警进行诊断分析：\n" +
                                     "告警ID: %s\n" +
@@ -115,7 +144,7 @@ public class AlarmController {
                                     "请按照排查计划执行诊断，并输出结构化诊断报告。",
                             alarmTask.getAlarmId(),
                             alarmTask.getStation(),
-                            alarmTask.getDeviceId(),
+                            deviceId,
                             alarmTask.getDeviceName(),
                             alarmTask.getDeviceType(),
                             alarmTask.getAlarmType(),
@@ -123,7 +152,7 @@ public class AlarmController {
                             alarmTask.getCurrentValue(),
                             alarmTask.getThreshold(),
                             alarmTask.getDuration()
-                    );
+                    ) + deviceContext.toString();
 
                     alarmTask.setStatus("DIAGNOSING");
                     alarmTask.setUpdatedAt(LocalDateTime.now());
@@ -136,15 +165,24 @@ public class AlarmController {
                 // 使用 GraphStreamService 进行真正的流式执行
                 String sessionId = "alarm-" + (taskId != null ? taskId : UUID.randomUUID().toString().substring(0, 8));
 
-                graphStreamService.streamGraph(
-                    diagnosisInput, sessionId, null, "DIAGNOSIS",
+                final Map<String, Object> finalExtraState = extraState;
+                graphStreamService.streamAlarmDiagnosis(
+                    diagnosisInput, sessionId, null,
                     new GraphStreamService.StreamCallback() {
                         @Override
                         public void onStart() {
                             try {
+                                Map<String, Object> startInfo = new LinkedHashMap<>();
+                                startInfo.put("message", "诊断启动，开始执行排查计划...");
+                                if (finalExtraState.containsKey("device_profile")) {
+                                    startInfo.put("deviceProfile", finalExtraState.get("device_profile"));
+                                }
+                                if (finalExtraState.containsKey("device_id")) {
+                                    startInfo.put("deviceId", finalExtraState.get("device_id"));
+                                }
                                 emitter.send(SseEmitter.event()
                                         .name("status")
-                                        .data("诊断启动，开始执行排查计划..."));
+                                        .data(startInfo));
                             } catch (IOException e) {
                                 logger.warn("发送启动事件失败", e);
                             }
@@ -172,7 +210,7 @@ public class AlarmController {
                             try {
                                 if (alarmTask != null) {
                                     alarmTask.setStatus("COMPLETED");
-                                    alarmTask.setDiagnosisResult(finalResponse);
+                                    alarmTask.setDiagnosisResult(toDiagnosisResultJson(finalResponse));
                                     alarmTask.setUpdatedAt(LocalDateTime.now());
                                     alarmTaskMapper.updateById(alarmTask);
                                 }
@@ -205,7 +243,8 @@ public class AlarmController {
                             }
                             emitter.complete();
                         }
-                    }
+                    },
+                    finalExtraState
                 );
 
             } catch (Exception e) {
@@ -235,6 +274,18 @@ public class AlarmController {
                 .orElse("诊断失败，请重试");
         logger.info("Graph引擎告警诊断成功, taskId={}", taskId);
         return answer;
+    }
+
+    private String toDiagnosisResultJson(String finalResponse) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("format", "markdown");
+        payload.put("content", finalResponse == null ? "" : finalResponse);
+        payload.put("generatedAt", LocalDateTime.now().toString());
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(payload);
+        } catch (Exception e) {
+            return "{\"format\":\"markdown\",\"content\":\"\",\"error\":\"failed_to_serialize_diagnosis\"}";
+        }
     }
 
     @GetMapping("/diagnose/{taskId}/status")

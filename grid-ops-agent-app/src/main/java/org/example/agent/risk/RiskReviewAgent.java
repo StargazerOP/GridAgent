@@ -2,10 +2,14 @@ package org.example.agent.risk;
 
 import org.example.config.LlmFactory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+
+import java.util.Arrays;
+import java.util.Set;
 
 @Component
 public class RiskReviewAgent {
@@ -14,6 +18,8 @@ public class RiskReviewAgent {
 
     @Autowired
     private ToolCallbackProvider tools;
+
+    private static final Set<String> RISK_TOOLS = Set.of("searchSafetyRules", "checkOperationRisk");
 
     public RiskReviewAgent(LlmFactory llmFactory) {
         this.llmFactory = llmFactory;
@@ -56,11 +62,14 @@ public class RiskReviewAgent {
 
     public ReactAgent create() {
         ChatModel chatModel = llmFactory.riskChatModel();
+        ToolCallback[] filtered = Arrays.stream(tools.getToolCallbacks())
+                .filter(tc -> RISK_TOOLS.contains(tc.getToolDefinition().name()))
+                .toArray(ToolCallback[]::new);
         return ReactAgent.builder()
                 .name("risk_review_agent")
                 .model(chatModel)
                 .systemPrompt(RISK_REVIEW_PROMPT)
-                .tools(tools.getToolCallbacks())
+                .tools(filtered)
                 .build();
     }
 }

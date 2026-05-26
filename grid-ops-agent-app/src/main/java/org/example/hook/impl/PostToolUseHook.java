@@ -3,60 +3,50 @@ package org.example.hook.impl;
 import org.example.hook.AgentHook;
 import org.example.hook.HookContext;
 import org.example.hook.HookResult;
-import org.example.observability.ObservabilityService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PostToolUseHook implements AgentHook {
 
-    @Autowired
-    private ObservabilityService observabilityService;
-
-    private static final String[] SENSITIVE_PATTERNS = {
-            "密码", "password", "手机号", "身份证", "银行卡"
-    };
+    private static final Logger logger = LoggerFactory.getLogger(PostToolUseHook.class);
 
     @Override
-    public String getName() { return "post_tool_use_hook"; }
+    public String getName() {
+        return "post-tool-use-validation";
+    }
 
     @Override
-    public int getOrder() { return 10; }
+    public int getOrder() {
+        return 90;
+    }
 
     @Override
     public HookResult execute(HookContext context) {
         String output = context.getOutput();
-        String toolName = (String) context.getParam("toolName");
 
-        if (output != null) {
-            String masked = maskSensitiveData(output);
-            context.setOutput(masked);
+        // Check for empty or error tool results
+        if (output == null || output.isBlank()) {
+            context.setParam("tool_result_status", "EMPTY");
+            context.setParam("tool_result_warning", "工具返回空结果");
+            logger.warn("PostToolUseHook: empty tool result — tool={}, session={}",
+                    context.getAgentName(), context.getSessionId());
+            return HookResult.proceed();
         }
 
-        if (toolName != null) {
-            try {
-                observabilityService.logToolCall(
-                        observabilityService.generateTraceId(),
-                        context.getTaskId(),
-                        context.getSessionId(),
-                        toolName,
-                        String.valueOf(context.getParam("toolInput")),
-                        output != null ? (output.length() > 500 ? output.substring(0, 500) : output) : null,
-                        "SUCCESS",
-                        context.getParam("toolDuration") != null ? ((Number) context.getParam("toolDuration")).longValue() : 0L
-                );
-            } catch (Exception e) {
-                // ignore observability errors
-            }
+        // Check for error patterns in tool output
+        String lower = output.toLowerCase();
+        if (lower.contains("\"error\"") || lower.contains("error") || lower.contains("失败") || lower.contains("异常")) {
+            context.setParam("tool_result_status", "ERROR");
+            context.setParam("tool_result_warning", "工具返回包含错误信息");
+            logger.warn("PostToolUseHook: tool returned error — tool={}, session={}, preview={}",
+                    context.getAgentName(), context.getSessionId(),
+                    output.substring(0, Math.min(100, output.length())));
+        } else {
+            context.setParam("tool_result_status", "OK");
         }
 
         return HookResult.proceed();
-    }
-
-    private String maskSensitiveData(String text) {
-        String result = text;
-        result = result.replaceAll("(1[3-9]\\d)\\d{4}(\\d{4})", "$1****$2");
-        result = result.replaceAll("(\\w+://[^:]+:)([^@]+)(@)", "$1****$3");
-        return result;
     }
 }

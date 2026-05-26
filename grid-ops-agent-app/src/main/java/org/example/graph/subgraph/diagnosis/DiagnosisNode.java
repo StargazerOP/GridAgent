@@ -30,6 +30,8 @@ public class DiagnosisNode implements NodeAction {
         String evidence = state.value(GraphStateKeys.EVIDENCE).map(Object::toString)
                 .orElse(state.value(GraphStateKeys.EXECUTION_RESULT).map(Object::toString).orElse(""));
         String skillContext = state.value("skill_context").map(Object::toString).orElse("");
+        String ragContext = state.value("rag_results").map(Object::toString).orElse("");
+        String workflowContext = state.value(GraphStateKeys.WORKFLOW_CONTEXT).map(Object::toString).orElse("");
         Object evidenceScore = state.value(GraphStateKeys.EVIDENCE_SCORE).orElse(null);
         Object evidenceCoverage = state.value(GraphStateKeys.EVIDENCE_COVERAGE).orElse(null);
 
@@ -46,6 +48,12 @@ public class DiagnosisNode implements NodeAction {
         if (!skillContext.isBlank()) {
             diagnosisInput.append("\n\n--- Business Context ---\n").append(skillContext);
         }
+        if (!ragContext.isBlank()) {
+            diagnosisInput.append("\n\n--- Retrieved Knowledge (RAG) ---\n").append(truncate(ragContext, 2400));
+        }
+        if (!workflowContext.isBlank()) {
+            diagnosisInput.append("\n\n--- Workflow Template Guidance ---\n").append(truncate(workflowContext, 2000));
+        }
         diagnosisInput.append("""
 
                 Please produce a structured diagnosis report that includes:
@@ -61,7 +69,7 @@ public class DiagnosisNode implements NodeAction {
                 Summarize tool evidence in concise operational language.
                 """);
 
-        String result = diagnosisAgent.create().call(diagnosisInput.toString()).getText();
+        String result = diagnosisAgent.generateWithoutTools(diagnosisInput.toString());
         ValidationResult validation = diagnosisValidator.validate(result);
 
         Map<String, Object> output = new LinkedHashMap<>();
@@ -71,5 +79,12 @@ public class DiagnosisNode implements NodeAction {
             output.put(GraphStateKeys.VALIDATION_WARNINGS, validation.getWarnings());
         }
         return output;
+    }
+
+    private String truncate(String text, int maxLength) {
+        if (text == null || text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + "...";
     }
 }

@@ -255,6 +255,40 @@ button:disabled { opacity: .62; cursor: progress; }
 .flow-card.mock { border-top-color: var(--orange); }
 .flow-card::after { content: ""; position: absolute; right: -22px; top: 48px; width: 22px; height: 2px; background: #8bb5df; }
 .flow-card:last-child::after { display: none; }
+.precheck-grid { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 10px; }
+.precheck-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid #dbe7ef;
+  border-radius: 8px;
+  background: rgba(255,255,255,.88);
+}
+.precheck-row.ready { border-left: 4px solid var(--green); }
+.precheck-row.estimate, .precheck-row.runtime { border-left: 4px solid var(--orange); }
+.precheck-row.missing { border-left: 4px solid var(--red); }
+.precheck-index {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--blue-soft); color: #245fae;
+  font-weight: 900; font-size: 12px;
+}
+.precheck-title { font-weight: 900; color: #243647; line-height: 1.35; }
+.precheck-evidence { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 4px; }
+.precheck-status {
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #eef3f8;
+  color: #425466;
+  font-size: 12px;
+  font-weight: 900;
+}
+.precheck-row.ready .precheck-status { background: var(--green-soft); color: #17604d; }
+.precheck-row.estimate .precheck-status, .precheck-row.runtime .precheck-status { background: var(--orange-soft); color: #92501a; }
+.precheck-row.missing .precheck-status { background: #fee2e2; color: #a33a36; }
 .flow-index {
   width: 22px; height: 22px; display: grid; place-items: center;
   border-radius: 50%; background: var(--blue-soft); color: #245fae;
@@ -312,31 +346,6 @@ button:disabled { opacity: .62; cursor: progress; }
   min-height: 620px;
 }
 .chat-main { display: flex; flex-direction: column; min-height: 0; padding: 0; overflow: hidden; }
-.diagnosis-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
-  background: #f8fbfa;
-}
-.phase-card {
-  border: 1px solid #dce7e2;
-  border-radius: 8px;
-  padding: 10px;
-  background: #fff;
-  min-width: 0;
-}
-.phase-card b { display: block; font-size: 13px; margin-bottom: 4px; }
-.phase-card small { color: var(--muted); font-size: 12px; }
-.phase-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 6px;
-  background: var(--green);
-}
 .chat-side { display: grid; gap: 12px; align-content: start; overflow: auto; padding-right: 3px; }
 .side-section {
   border: 1px solid var(--line);
@@ -345,6 +354,56 @@ button:disabled { opacity: .62; cursor: progress; }
   background: #fff;
 }
 .side-section h3 { margin: 0 0 8px; font-size: 15px; }
+.side-collapse { margin: 0; }
+.side-collapse summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.side-collapse summary::-webkit-details-marker { display: none; }
+.side-collapse summary h3 { margin: 0; }
+.side-collapse[open] summary { margin-bottom: 8px; }
+.sidebar-agent-list { display: grid; gap: 6px; }
+.sidebar-agent-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: #fafcfb;
+  min-width: 0;
+}
+.sidebar-agent-item b { display: block; font-size: 12px; line-height: 1.3; }
+.sidebar-agent-item small { display: block; color: var(--muted); font-size: 11px; line-height: 1.3; margin-top: 1px; }
+.sidebar-agent-item.active {
+  border-color: #92c7bd;
+  background: #f4fbf8;
+}
+.sidebar-agent-item.done {
+  border-color: #dce7e2;
+  background: #fbfdfc;
+}
+.sidebar-agent-item.done b { color: #4b5563; }
+.sidebar-agent-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-top: 3px;
+  flex-shrink: 0;
+  background: #c5d2dd;
+}
+.sidebar-agent-item.active .sidebar-agent-dot {
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(23,107,90,.45);
+  animation: tracePulse 1.25s infinite;
+}
+.sidebar-agent-item.done .sidebar-agent-dot {
+  background: var(--green);
+  animation: none;
+  box-shadow: none;
+}
 .route-stack { display: grid; gap: 8px; }
 .route-card {
   border: 1px solid #dde8f2;
@@ -353,6 +412,8 @@ button:disabled { opacity: .62; cursor: progress; }
   padding: 10px;
   background: #f9fcff;
 }
+.route-card.failed { border-left-color: var(--red); background: #fff9f9; }
+.route-card.completed { border-left-color: var(--green); }
 .route-card b { display: block; font-size: 13px; }
 .route-card small { color: var(--muted); display: block; margin-top: 4px; line-height: 1.45; }
 .agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -365,6 +426,65 @@ button:disabled { opacity: .62; cursor: progress; }
 }
 .agent-card b { display: block; font-size: 13px; margin-bottom: 4px; }
 .agent-card small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.lifecycle-rail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.lifecycle-step {
+  border: 1px solid #dbe6ee;
+  border-radius: 8px;
+  padding: 11px;
+  background: #fff;
+  min-width: 0;
+}
+.lifecycle-step b { display: block; font-size: 14px; color: #1f3345; margin-bottom: 4px; }
+.lifecycle-step small { display: block; color: var(--muted); line-height: 1.35; }
+.handoff-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 2px;
+  border: 1px solid #cfe2dc;
+  background: #f4fbf8;
+  border-radius: 8px;
+  padding: 12px;
+}
+.handoff-card b { display: block; color: #173f35; margin-bottom: 3px; }
+.handoff-card small { color: var(--muted); }
+.agent-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin: 8px 0 10px;
+}
+.agent-tile {
+  border: 1px solid #dfe8f1;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+  min-height: 78px;
+}
+.agent-tile.active {
+  border-color: #92c7bd;
+  background: #f4fbf8;
+  box-shadow: 0 0 0 2px rgba(23,107,90,.08);
+}
+.agent-tile.done { border-color: #c9ddd6; }
+.agent-tile b { display: block; font-size: 12px; color: #213445; margin-bottom: 3px; }
+.agent-tile small { display: block; color: var(--muted); font-size: 11px; line-height: 1.32; }
+.agent-tile .agent-chip {
+  display: inline-block;
+  margin-top: 5px;
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: #eef5ff;
+  color: #245fae;
+  font-size: 10px;
+  font-weight: 800;
+}
 .messages {
   flex: 1 1 auto;
   min-height: 0;
@@ -461,6 +581,38 @@ button:disabled { opacity: .62; cursor: progress; }
 .trace-current small { color: var(--muted); }
 .trace-state.done + .trace-current,
 .trace-current.done { animation: none; opacity: .76; }
+.graph-route {
+  margin: 0 0 8px 0;
+  padding: 9px 10px;
+  border: 1px solid #d9e7ef;
+  background: #fbfdfe;
+  display: grid;
+  gap: 7px;
+}
+.graph-route-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #263744;
+  font-weight: 900;
+}
+.graph-route-head small { color: var(--muted); font-weight: 700; }
+.graph-route-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.graph-node {
+  border: 1px solid #d7e3ea;
+  background: #fff;
+  color: #596979;
+  padding: 4px 7px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.graph-node.done { border-color: #a9cdbc; color: #176b5a; background: #f4fbf7; }
+.graph-node.active { border-color: #245fae; color: #174b86; background: #eef6ff; box-shadow: 0 0 0 2px rgba(36,95,174,.08); }
 @keyframes traceFlow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -489,6 +641,8 @@ button:disabled { opacity: .62; cursor: progress; }
   overflow: hidden;
 }
 .trace-item[open] { border-left-color: var(--green); }
+.trace-item.failed { border-left-color: var(--red); background: #fffafa; }
+.trace-item.warning { border-left-color: #e1a93b; background: #fffdf7; }
 .trace-item summary {
   list-style: none;
   cursor: pointer;
@@ -594,6 +748,43 @@ button:disabled { opacity: .62; cursor: progress; }
   border-radius: 8px;
   padding: 10px;
 }
+.markdown-answer table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 10px 0;
+}
+.markdown-answer th,
+.markdown-answer td {
+  border: 1px solid #dfe8f3;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.markdown-answer th {
+  background: #f4f8fc;
+  font-weight: 800;
+  color: #17212b;
+}
+.markdown-answer tr:nth-child(even) td {
+  background: #fafcfd;
+}
+.markdown-answer blockquote {
+  margin: 10px 0;
+  padding: 8px 14px;
+  border-left: 4px solid #8fcfbd;
+  background: #f4faf8;
+  color: #2d5548;
+  border-radius: 0 6px 6px 0;
+}
+.markdown-answer blockquote p { margin: 4px 0; }
+.markdown-answer a {
+  color: #245fae;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.markdown-answer em { font-style: italic; color: #4b5563; }
+.markdown-answer del { text-decoration: line-through; opacity: .7; }
 .chat-input { border-top: 1px solid var(--line); padding: 14px; display: flex; gap: 10px; background: #fbfdff; }
 .chat-input textarea { flex: 1; resize: none; min-height: 48px; max-height: 140px; }
 .btn-col { display: grid; gap: 8px; align-content: start; }
@@ -711,7 +902,7 @@ button:disabled { opacity: .62; cursor: progress; }
 }
 @media (max-width: 720px) {
   .topbar, .panel-head, .query-row, .chat-input, .graph-toolbar { flex-direction: column; align-items: stretch; }
-  .summary-grid, .grid-3, .two, .diagnosis-strip, .agent-grid { grid-template-columns: 1fr; }
+  .summary-grid, .grid-3, .two, .agent-grid, .agent-board, .lifecycle-rail { grid-template-columns: 1fr; }
   .message { max-width: 96%; }
 }
 </style>
@@ -727,12 +918,12 @@ button:disabled { opacity: .62; cursor: progress; }
       </div>
     </div>
     <nav class="nav">
-      <button class="active" data-tab="task">任务编排台</button>
+      <button class="active" data-tab="task">执行前检查台</button>
       <button data-tab="chat">协同诊断会话</button>
       <button data-tab="graph">知识拓扑</button>
       <button data-tab="knowledge">知识库运维</button>
     </nav>
-    <div class="side-card">任务编排台基于 BGE 语义匹配和关键词校验生成流程草案；协同诊断会话负责运行 Agent/Graph 并沉淀执行证据。</div>
+    <div class="side-card">执行前检查台用于确认将进入 Graph 的流程、数据可用性和半真实推演步骤；协同诊断会话负责实际运行 Agent 并沉淀证据。</div>
     <div class="stats">
       <div class="stat"><b id="statTemplates">0</b><small>流程模板</small></div>
       <div class="stat"><b id="statNodes">0</b><small>图谱节点</small></div>
@@ -743,8 +934,8 @@ button:disabled { opacity: .62; cursor: progress; }
   <main class="main">
     <header class="topbar">
       <div>
-        <h1 id="pageTitle">任务编排台</h1>
-        <p id="pageSubtitle">识别调度任务意图，生成可执行计划预览，并联动相关知识依据。</p>
+        <h1 id="pageTitle">执行前检查台</h1>
+        <p id="pageSubtitle">识别任务意图，检查 Graph 计划、样例数据和需要半真实推演的步骤。</p>
       </div>
       <div class="status-pill" id="apiStatus">连接检测中</div>
     </header>
@@ -754,17 +945,29 @@ button:disabled { opacity: .62; cursor: progress; }
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2>流程匹配预览</h2>
-              <p>输入调度或运维任务，系统会基于 BGE 语义匹配和关键词校验匹配内置流程模板，并生成可解释计划草案。</p>
+              <h2>执行链路检查</h2>
+              <p>输入调度或运维任务，系统基于 BGE 语义匹配和关键词校验确定流程，并检查实际会进入 Graph 的步骤。</p>
             </div>
             <button class="secondary" onclick="resetTask()">重置</button>
           </div>
           <div class="query-row">
             <input id="taskInput" value="主变油温异常诊断，请查询状态、告警历史并给出处置建议" placeholder="例如：负荷转供操作校核、N-1 风险分析、主变油温异常诊断">
-            <button id="matchBtn" class="primary" onclick="matchTask()">生成预览</button>
+            <button id="matchBtn" class="primary" onclick="matchTask()">生成检查</button>
+          </div>
+          <div class="lifecycle-rail">
+            <div class="lifecycle-step"><b>1. 流程匹配</b><small>匹配模板、知识节点和目标 Graph。</small></div>
+            <div class="lifecycle-step"><b>2. 数据检查</b><small>确认样例数据、RAG、图谱和推演算子状态。</small></div>
+            <div class="lifecycle-step"><b>3. 协同执行</b><small>进入诊断控制台，由 Agent 调用工具并沉淀证据。</small></div>
           </div>
           <div class="chip-row" id="quickPrompts"></div>
           <div class="summary-grid" id="matchSummary"></div>
+          <div id="handoffCard" class="handoff-card" style="display:none;">
+            <div>
+              <b>检查完成，可进入协同执行</b>
+              <small id="handoffText">诊断控制台将按检查结果装载 Graph，并展示 Agent 协作轨迹。</small>
+            </div>
+            <button class="success" onclick="startMatchedTaskExecution()">启动诊断执行</button>
+          </div>
           <div class="workflow-canvas" id="workflowFlow"><div class="empty">等待任务匹配</div></div>
           <div class="task-context">
             <div>
@@ -797,16 +1000,10 @@ button:disabled { opacity: .62; cursor: progress; }
         <section class="panel chat-main">
           <div class="panel-head" style="padding:16px;margin:0;border-bottom:1px solid var(--line);">
             <div>
-              <h2>运行诊断控制台</h2>
-              <p>意图、证据、计划、执行和校核集中呈现，适配知识问答、设备诊断和操作风险分析。</p>
+              <h2>多 Agent 运行控制台</h2>
+              <p>展示一次电网任务从意图识别、流程装载、计划生成、工具取证到安全复核的协作过程。</p>
             </div>
             <button class="danger" onclick="clearSession()">清空会话</button>
-          </div>
-          <div class="diagnosis-strip">
-            <div class="phase-card"><b><span class="phase-dot"></span>意图路由</b><small>knowledge_qa / diagnosis / chat</small></div>
-            <div class="phase-card"><b><span class="phase-dot"></span>上下文装载</b><small>知识库、图谱、告警、流程模板</small></div>
-            <div class="phase-card"><b><span class="phase-dot"></span>计划编排</b><small>PlanStep、工具别名、执行依赖</small></div>
-            <div class="phase-card"><b><span class="phase-dot"></span>结果校核</b><small>证据合并、风险项、人工复核</small></div>
           </div>
           <div id="messages" class="messages">
             <div class="empty">等待调度问询或告警诊断任务</div>
@@ -821,22 +1018,23 @@ button:disabled { opacity: .62; cursor: progress; }
         </section>
         <aside class="panel chat-side">
           <div class="side-section">
-            <h3>编排链路</h3>
-            <div class="route-stack">
-              <div class="route-card"><b>RouterAgent</b><small>识别任务类型，决定知识问答、诊断或通用会话路径。</small></div>
-              <div class="route-card"><b>PlannerAgent</b><small>结合流程模板与可用工具生成计划；只有进入会话执行后才会调用工具。</small></div>
-              <div class="route-card"><b>ToolAgent</b><small>调用知识库、图谱、拓扑分析和风险校核工具。</small></div>
-              <div class="route-card"><b>ReviewerAgent</b><small>汇总证据、风险项和人工复核要求。</small></div>
-            </div>
+            <details class="side-collapse" open>
+              <summary><h3>Agent 协作状态</h3></summary>
+              <div class="sidebar-agent-list" id="sidebarAgentList">
+                <div class="sidebar-agent-item"><span class="sidebar-agent-dot"></span><div><b>等待任务启动</b><small>发送诊断请求后，Agent 状态将在此实时更新</small></div></div>
+              </div>
+            </details>
           </div>
           <div class="side-section">
-            <h3>能力矩阵</h3>
-            <div class="agent-grid">
-              <div class="agent-card"><b>知识召回</b><small>规程、手册、案例、专家经验</small></div>
-              <div class="agent-card"><b>图谱查询</b><small>设备、流程、工具、约束关系</small></div>
-              <div class="agent-card"><b>拓扑分析</b><small>影响范围、关联设备、薄弱环节</small></div>
-              <div class="agent-card"><b>风险校核</b><small>操作约束、越限、复核项</small></div>
-            </div>
+            <details class="side-collapse">
+              <summary><h3>能力矩阵</h3></summary>
+              <div class="agent-grid">
+                <div class="agent-card"><b>知识召回</b><small>规程、手册、案例、专家经验</small></div>
+                <div class="agent-card"><b>图谱查询</b><small>设备、流程、工具、约束关系</small></div>
+                <div class="agent-card"><b>拓扑分析</b><small>影响范围、关联设备、薄弱环节</small></div>
+                <div class="agent-card"><b>风险校核</b><small>操作约束、越限、复核项</small></div>
+              </div>
+            </details>
           </div>
           <div class="side-section">
             <h3>快速任务</h3>
@@ -1022,8 +1220,10 @@ var quickPrompts = [
   '500kV母线检修方式下发生N-1故障，生成风险校核流程',
   '新能源场站全场停电，请生成处置关注点'
 ];
+var sidebarAgents = {};
+
 var tabMeta = {
-  task: ['任务编排台', '将自然语言任务匹配到内置流程模板，生成可解释的流程预览。'],
+  task: ['执行前检查台', '将自然语言任务映射到 Graph 计划，检查数据可用性和半真实推演步骤。'],
   chat: ['运行诊断控制台', '真正执行 Graph、多 Agent、工具调用、RAG 检索和诊断总结。'],
   graph: ['知识拓扑', '按流程编排、工具依赖、知识约束和任务子图浏览内置知识组织。'],
   knowledge: ['知识库运维', '在同一套界面中完成文档上传、列表查看和检索测试。']
@@ -1049,7 +1249,54 @@ function escapeHtml(text) { var d = document.createElement('div'); d.textContent
 function renderInlineMarkdown(text) {
   return escapeHtml(text)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/~~([^~]+)~~/g, '<del>$1</del>');
+}
+function isTableRow(line) {
+  return /^\|.+\|$/.test(line);
+}
+function isTableSeparator(line) {
+  return /^\|[\s:-]+\|$/.test(line);
+}
+function parseTableRows(lines, startIdx) {
+  var rows = [];
+  var i = startIdx;
+  while (i < lines.length && isTableRow(lines[i])) {
+    rows.push(lines[i]);
+    i++;
+  }
+  return { rows: rows, endIdx: i };
+}
+function renderTable(rows) {
+  if (rows.length < 2) return '';
+  var headerCells = rows[0].split('|').filter(function(c) { return c.trim() !== ''; });
+  var dataStart = 1;
+  if (isTableSeparator(rows[1])) {
+    dataStart = 2;
+  }
+  var dataRows = rows.slice(dataStart);
+  var html = '<thead><tr>';
+  headerCells.forEach(function(cell) {
+    html += '<th>' + renderInlineMarkdown(cell.trim()) + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  dataRows.forEach(function(row) {
+    var cols = row.split('|').filter(function(c, i, arr) {
+      return i > 0 && i < arr.length - 1;
+    });
+    if (cols.length === 0) {
+      cols = row.split('|').filter(function(c) { return c.trim() !== ''; });
+    }
+    html += '<tr>';
+    for (var ci = 0; ci < headerCells.length; ci++) {
+      html += '<td>' + renderInlineMarkdown(ci < cols.length ? cols[ci].trim() : '') + '</td>';
+    }
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  return '<table>' + html + '</table>';
 }
 function renderMarkdown(text) {
   var lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
@@ -1061,23 +1308,58 @@ function renderMarkdown(text) {
       listType = null;
     }
   }
-  lines.forEach(function(rawLine) {
+  var i = 0;
+  while (i < lines.length) {
+    var rawLine = lines[i];
     var line = rawLine.trim();
     var ordered = line.match(/^\d+\.\s+(.+)$/);
     var unordered = line.match(/^[-*]\s+(.+)$/);
+    var fenceMatch = line.match(/^(```|~~~)/);
+    if (fenceMatch) {
+      closeList();
+      var fence = fenceMatch[1];
+      var lang = line.slice(fence.length).trim();
+      var codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith(fence)) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++;
+      html.push('<pre><code' + (lang ? ' class="language-' + escapeHtml(lang) + '"' : '') + '>' + escapeHtml(codeLines.join('\n')) + '</code></pre>');
+      continue;
+    }
+    if (/^>/.test(line)) {
+      closeList();
+      var quoteLines = [];
+      while (i < lines.length && /^>/.test(lines[i].trim())) {
+        quoteLines.push(lines[i].trim().replace(/^>\s?/, ''));
+        i++;
+      }
+      html.push('<blockquote>' + renderMarkdown(quoteLines.join('\n')) + '</blockquote>');
+      continue;
+    }
+    if (isTableRow(line)) {
+      closeList();
+      var result = parseTableRows(lines, i);
+      i = result.endIdx;
+      html.push(renderTable(result.rows));
+      continue;
+    }
+    i++;
     if (!line) {
       closeList();
-      return;
+      continue;
     }
     if (/^---+$/.test(line)) {
       closeList();
       html.push('<hr>');
-      return;
+      continue;
     }
     if (/^#{1,4}\s+/.test(line)) {
       closeList();
       html.push('<h3>' + renderInlineMarkdown(line.replace(/^#{1,4}\s+/, '')) + '</h3>');
-      return;
+      continue;
     }
     if (ordered) {
       if (listType !== 'ol') {
@@ -1086,7 +1368,7 @@ function renderMarkdown(text) {
         listType = 'ol';
       }
       html.push('<li>' + renderInlineMarkdown(ordered[1]) + '</li>');
-      return;
+      continue;
     }
     if (unordered) {
       if (listType !== 'ul') {
@@ -1095,11 +1377,11 @@ function renderMarkdown(text) {
         listType = 'ul';
       }
       html.push('<li>' + renderInlineMarkdown(unordered[1]) + '</li>');
-      return;
+      continue;
     }
     closeList();
     html.push('<p>' + renderInlineMarkdown(line) + '</p>');
-  });
+  }
   closeList();
   return html.join('');
 }
@@ -1184,10 +1466,12 @@ async function matchTask() {
     renderCandidateNodes(taskState.candidateNodes);
     renderTaskSubgraph();
     renderTaskTemplateDetail(taskState.candidateNodes[0] || null);
+    renderHandoff(payload, query);
   } catch (e) {
     document.getElementById('matchSummary').innerHTML =
-      '<div class="match-card"><h3>生成失败</h3><div class="match-title">流程草案未生成</div><small>' + escapeHtml(e.message || e) + '</small></div>';
+    '<div class="match-card"><h3>生成失败</h3><div class="match-title">执行检查未生成</div><small>' + escapeHtml(e.message || e) + '</small></div>';
     document.getElementById('workflowFlow').innerHTML = '<div class="empty">请检查后端服务、BGE embedding 服务和网络连接后重试。</div>';
+    hideHandoff();
   } finally {
     setTaskLoading(false);
   }
@@ -1196,7 +1480,7 @@ function setTaskLoading(loading) {
   var btn = document.getElementById('matchBtn');
   if (btn) {
     btn.disabled = loading;
-    btn.textContent = loading ? '生成中...' : '生成预览';
+    btn.textContent = loading ? '检查中...' : '生成检查';
   }
   if (!loading) return;
   document.getElementById('matchSummary').innerHTML =
@@ -1207,17 +1491,18 @@ function setTaskLoading(loading) {
       '<small>计算任务语义向量，结合关键词校验筛选近似模板。</small>' +
     '</div>' +
     '<div class="match-card loading">' +
-      '<h3>计划草案生成</h3>' +
-      '<div class="match-title loading-dots">正在组织执行步骤</div>' +
+      '<h3>执行条件检查</h3>' +
+      '<div class="match-title loading-dots">正在核对数据状态</div>' +
       '<div class="match-meter"><span style="width:48%"></span></div>' +
-      '<small>根据命中模板、相关节点和工具能力生成流程草案。</small>' +
+      '<small>核对样例数据、RAG、图谱和半真实推演步骤。</small>' +
     '</div>';
   document.getElementById('workflowFlow').innerHTML =
-    '<div class="empty"><b>正在生成流程草案</b><br><small>首次匹配会初始化本地语义索引，可能稍慢。</small></div>';
+    '<div class="empty"><b>正在生成执行前检查</b><br><small>首次匹配会初始化本地语义索引，可能稍慢。</small></div>';
   document.getElementById('candidateNodes').innerHTML =
     '<div class="empty">正在筛选相关流程、工具和知识节点...</div>';
   document.getElementById('taskTemplateDetail').innerHTML =
     '<div class="empty">等待模板匹配结果</div>';
+  hideHandoff();
 }
 function renderMatch(payload) {
   var template = payload.template || {};
@@ -1234,26 +1519,92 @@ function renderMatch(payload) {
     '<div class="match-card">' +
       '<h3>推荐能力</h3>' +
       '<div class="tool-chips">' + (tools.length ? tools.map(renderToolChip).join('') : '<span class="tool-chip">暂无推荐</span>') + '</div>' +
-      '<small>来自命中模板和相关知识节点，用于组织计划草案。</small>' +
+      '<small>来自命中模板和相关知识节点，用于进入 Graph 前的能力确认。</small>' +
     '</div>';
-  var steps = payload.plan_steps || [];
-  var html = '<div class="empty" style="margin-bottom:10px;">以下为后端生成的流程草案；执行证据、耗时和工具返回将在协同诊断会话中产生。</div><div class="flow-row">';
-  steps.forEach(function(step, index) {
-    var tool = step.toolName || step.tool_name || step.tool || '';
-    var mock = ['calculatePowerFlowEstimate','checkOperationRisk','generateFaultScenario'].indexOf(tool) >= 0;
-    html += '<div class="flow-card ' + (mock ? 'mock' : '') + '">' +
-      '<div class="flow-index">' + (index + 1) + '</div>' +
-      '<div class="flow-step">' + escapeHtml(step.action || step.step || '') + '</div>' +
-      '<div class="tool-pill ' + (mock ? 'mock' : '') + '">' + escapeHtml(tool || 'ANALYSIS') + '</div>' +
-      '<small>' + (mock ? 'mock/estimate 预览' : '计划预览') + '</small>' +
-      '</div>';
-  });
-  html += '</div>';
-  document.getElementById('workflowFlow').innerHTML = steps.length ? html : '<div class="empty">未生成可执行步骤</div>';
+  renderExecutionPrecheck(payload);
 }
 function renderToolChip(tool) {
   var mock = ['calculatePowerFlowEstimate','checkOperationRisk','generateFaultScenario'].indexOf(tool) >= 0;
-  return '<span class="tool-chip ' + (mock ? 'mock' : '') + '">' + escapeHtml(tool) + '</span>';
+  return '<span class="tool-chip ' + (mock ? 'mock' : '') + '">' + escapeHtml(toolDisplayName(tool)) + '</span>';
+}
+function renderExecutionPrecheck(payload) {
+  var precheck = payload.execution_precheck || {};
+  var summary = precheck.summary || {};
+  var checks = precheck.checks || [];
+  var graphName = precheck.graph_name || payload.execution_graph || 'power_ops_workflow';
+  var html =
+    '<div class="empty" style="margin-bottom:10px;text-align:left;">' +
+      '<b>目标 Graph：' + escapeHtml(graphDisplayName(graphName)) + '</b><br>' +
+      '<small>检查 ' + escapeHtml(summary.total_steps || checks.length || 0) + ' 步，' +
+      '就绪 ' + escapeHtml(summary.ready_steps || 0) + '，' +
+      '半真实/运行时 ' + escapeHtml(summary.semi_real_or_runtime_steps || 0) + '，' +
+      '缺失 ' + escapeHtml(summary.missing_steps || 0) + '。</small>' +
+    '</div>';
+  html += '<div class="precheck-grid">';
+  checks.forEach(function(check, index) {
+    var status = check.status || '';
+    var cls = status === 'READY' ? 'ready' : status === 'SEMI_REAL_ESTIMATE' ? 'estimate' : status === 'RAG_RUNTIME' ? 'runtime' : 'missing';
+    html += '<div class="precheck-row ' + cls + '">' +
+      '<div class="precheck-index">' + escapeHtml(check.step_no || index + 1) + '</div>' +
+      '<div>' +
+        '<div class="precheck-title">' + escapeHtml(check.action || '待执行步骤') + '</div>' +
+        '<div class="precheck-evidence">' + escapeHtml(check.tool_label || toolDisplayName(check.tool || '')) + ' · ' + escapeHtml(check.evidence || '') + '</div>' +
+      '</div>' +
+      '<div class="precheck-status">' + escapeHtml(check.status_label || status) + '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  document.getElementById('workflowFlow').innerHTML = checks.length ? html : '<div class="empty">未生成执行检查</div>';
+}
+function toolDisplayName(tool) {
+  var labels = {
+    getDeviceProfile: '设备档案',
+    getDeviceStatus: '设备状态',
+    getAlarmHistory: '历史告警',
+    getDeviceLogs: '运行日志',
+    getDefectTickets: '缺陷工单',
+    searchSafetyRules: '安全规程',
+    queryInternalDocs: '知识库检索',
+    queryKnowledgeGraph: '知识图谱',
+    analyzeTopology: '拓扑影响',
+    calculatePowerFlowEstimate: '潮流估算',
+    checkOperationRisk: '风险校核',
+    generateFaultScenario: '场景推演'
+  };
+  return labels[tool] || tool || '分析步骤';
+}
+function graphDisplayName(graphName) {
+  if (graphName === 'alarm_diagnosis_graph') return '告警诊断专用图';
+  return '通用电网任务图';
+}
+function renderHandoff(payload, query) {
+  var card = document.getElementById('handoffCard');
+  if (!card) return;
+  var template = payload.template || {};
+  var text = document.getElementById('handoffText');
+  if (text) {
+    var graphName = (payload.execution_precheck || {}).graph_name || payload.execution_graph || 'power_ops_workflow';
+    text.textContent = '已匹配「' + (template.name || '流程模板') + '」，目标为' + graphDisplayName(graphName) + '。点击后将在运行控制台实际执行并沉淀证据。';
+  }
+  card.dataset.query = query || '';
+  card.style.display = 'flex';
+}
+function hideHandoff() {
+  var card = document.getElementById('handoffCard');
+  if (card) {
+    card.style.display = 'none';
+    card.dataset.query = '';
+  }
+}
+function startMatchedTaskExecution() {
+  var query = (document.getElementById('handoffCard') || {}).dataset
+    ? document.getElementById('handoffCard').dataset.query
+    : '';
+  query = query || document.getElementById('taskInput').value.trim();
+  if (!query) return;
+  document.getElementById('questionInput').value = query;
+  switchTab('chat');
+  startDiagnosisWithTask(null, query);
 }
 function renderCandidateNodes(nodes) {
   var wrap = document.getElementById('candidateNodes');
@@ -1450,6 +1801,7 @@ function resetTask() {
   document.getElementById('matchSummary').innerHTML = '';
   document.getElementById('workflowFlow').innerHTML = '<div class="empty">等待任务匹配</div>';
   document.getElementById('candidateNodes').innerHTML = '<div class="empty">等待任务匹配</div>';
+  hideHandoff();
   taskState.payload = null;
   taskState.candidateNodes = [];
   taskState.selectedNodeId = '';
@@ -1836,9 +2188,15 @@ function createTraceView(title) {
   header.className = 'trace-header';
   header.innerHTML = '<span class="trace-title">' + escapeHtml(title || '执行轨迹') + '</span>' +
     '<span class="trace-state"><i class="trace-pulse"></i><span>运行中</span></span>';
+  var board = document.createElement('div');
+  board.className = 'agent-board';
+  board.innerHTML = renderAgentBoard({}, '');
   var current = document.createElement('div');
   current.className = 'trace-current';
   current.innerHTML = '<b>当前步骤</b><small>等待编排启动</small>';
+  var route = document.createElement('div');
+  route.className = 'graph-route';
+  route.innerHTML = renderGraphRoute('unknown', '');
   var active = document.createElement('div');
   active.className = 'trace-active';
   var archive = document.createElement('details');
@@ -1850,6 +2208,8 @@ function createTraceView(title) {
   archive.appendChild(archiveSummary);
   archive.appendChild(list);
   stepsDiv.appendChild(header);
+  stepsDiv.appendChild(board);
+  stepsDiv.appendChild(route);
   stepsDiv.appendChild(current);
   stepsDiv.appendChild(active);
   stepsDiv.appendChild(archive);
@@ -1858,7 +2218,7 @@ function createTraceView(title) {
   msgDiv.appendChild(stepsDiv);
   msgDiv.appendChild(contentDiv);
   document.getElementById('messages').appendChild(msgDiv);
-  return {msgDiv: msgDiv, stepsDiv: stepsDiv, current: current, active: active, archive: archive, archiveSummary: archiveSummary, list: list, contentDiv: contentDiv, header: header, count: 0, archivedCount: 0, activeItem: null};
+  return {msgDiv: msgDiv, stepsDiv: stepsDiv, current: current, active: active, archive: archive, archiveSummary: archiveSummary, list: list, contentDiv: contentDiv, header: header, board: board, route: route, graphName: '', agents: {}, count: 0, archivedCount: 0, activeItem: null};
 }
 function setTraceState(trace, label, done) {
   var state = trace.header.querySelector('.trace-state');
@@ -1868,19 +2228,37 @@ function setTraceState(trace, label, done) {
 }
 function appendTraceStatus(trace, text) {
   archiveActiveTraceItem(trace);
-  updateCurrentStep(trace, text, '准备中');
+  var displayText = text;
+  var deviceInfo = null;
+  try {
+    if (typeof text === 'string' && text.startsWith('{')) {
+      var parsed = JSON.parse(text);
+      displayText = parsed.message || text;
+      deviceInfo = parsed.deviceProfile;
+    } else if (typeof text === 'object' && text.message) {
+      displayText = text.message;
+      deviceInfo = text.deviceProfile;
+    }
+  } catch(e) {}
+  updateCurrentStep(trace, displayText, '准备中');
   var item = document.createElement('details');
   item.className = 'trace-item status running';
   item.open = false;
-  item.innerHTML = '<summary><span class="trace-spinner"></span><span class="trace-node">' + escapeHtml(text) + '</span><span class="trace-badge">status</span></summary>';
+  item.innerHTML = '<summary><span class="trace-spinner"></span><span class="trace-node">' + escapeHtml(displayText) + '</span><span class="trace-badge">status</span></summary>';
   trace.active.appendChild(item);
   trace.activeItem = item;
   scrollMessages();
+  if (deviceInfo) {
+    addMessage('[设备预取] 已自动加载' + (deviceInfo.deviceName || '设备') + '档案', true);
+  }
 }
 function appendTraceStep(trace, rawData) {
   if (trace.finished) return;
   archiveActiveTraceItem(trace);
   var step = parseMaybeJson(rawData);
+  updateGraphRoute(trace, step);
+  updateAgentBoard(trace, step);
+  updateSidebarAgents(step);
   trace.count += 1;
   var node = step.node || 'node';
   var agent = step.agent || inferAgentName(step);
@@ -1888,7 +2266,8 @@ function appendTraceStep(trace, rawData) {
   updateCurrentStep(trace, displayNodeName(node), meta);
   var detailHtml = buildTraceDetail(step);
   var item = document.createElement('details');
-  item.className = 'trace-item running';
+  var itemState = step.tool_result_status === 'PARTIAL_FAILED' ? ' warning' : '';
+  item.className = 'trace-item running' + itemState;
   item.open = false;
   item.innerHTML =
     '<summary><span class="trace-spinner"></span><span><span class="trace-node">' + escapeHtml(displayNodeName(node)) + '</span>' +
@@ -1897,6 +2276,138 @@ function appendTraceStep(trace, rawData) {
   trace.active.appendChild(item);
   trace.activeItem = item;
   scrollMessages();
+}
+function graphRouteSpec(graphName) {
+  var graph = String(graphName || '');
+  if (graph === 'alarm_diagnosis_graph') {
+    return {
+      title: '告警诊断专用图',
+      desc: '告警表单直达诊断编排，不经过通用路由',
+      nodes: ['pre_check','context_load','entity_extract','alarm_rag_retrieve','planner','executor','evidence_validation','diagnosis','risk_assessment','replanner','action_recommend','safety_review','final_response','memory_save']
+    };
+  }
+  if (graph === 'power_ops_workflow') {
+    return {
+      title: '通用协同运行图',
+      desc: '由 Router 分流到知识问答、诊断或对话分支',
+      nodes: ['pre_check','context_load','router','query_rewrite','rag_retrieve','tool_execute','rerank','react_qa_agent','answer_review','citation_check','entity_extract','alarm_rag_retrieve','planner','executor','evidence_validation','diagnosis','risk_assessment','replanner','action_recommend','chat','safety_review','final_response','memory_save']
+    };
+  }
+  return {
+    title: '等待后端图谱',
+    desc: '收到首个节点后显示实际执行路线',
+    nodes: []
+  };
+}
+function renderGraphRoute(graphName, activeNode) {
+  var spec = graphRouteSpec(graphName);
+  var seenActive = false;
+  var flow = spec.nodes.length ? spec.nodes.map(function(node) {
+    var active = node === activeNode;
+    if (active) seenActive = true;
+    var done = !seenActive && activeNode && spec.nodes.indexOf(activeNode) >= 0;
+    return '<span class="graph-node' + (active ? ' active' : done ? ' done' : '') + '">' + escapeHtml(displayNodeName(node)) + '</span>';
+  }).join('') : '<span class="graph-node">等待图谱事件</span>';
+  return '<div class="graph-route-head"><span>' + escapeHtml(spec.title) + '</span><small>' + escapeHtml(spec.desc) + '</small></div>' +
+    '<div class="graph-route-flow">' + flow + '</div>';
+}
+function updateGraphRoute(trace, step) {
+  if (!trace || !trace.route) return;
+  var graphName = step.graph_name || trace.graphName || 'unknown';
+  trace.graphName = graphName;
+  trace.route.innerHTML = renderGraphRoute(graphName, step.node || '');
+}
+var agentOrder = [
+  ['RouterAgent', '识别任务类型'],
+  ['WorkflowContextAgent', '装载流程知识'],
+  ['EntityAgent', '抽取告警实体'],
+  ['PlannerAgent', '生成执行计划'],
+  ['ToolAgent', '调用工具取证'],
+  ['KnowledgeAgent', '召回文档证据'],
+  ['EvidenceAgent', '评估证据质量'],
+  ['SafetyReviewAgent', '安全与风险复核'],
+  ['ReportAgent', '组织最终结论']
+];
+function agentOrderForGraph(graphName) {
+  if (String(graphName || '') === 'alarm_diagnosis_graph') {
+    return agentOrder.filter(function(item) { return item[0] !== 'RouterAgent'; });
+  }
+  return agentOrder;
+}
+function renderAgentBoard(state, graphName) {
+  return agentOrderForGraph(graphName).map(function(item) {
+    var key = item[0];
+    var data = state[key] || {};
+    var cls = data.active ? ' active' : data.done ? ' done' : '';
+    var label = data.decision || data.status || '待参与';
+    var desc = data.contribution || item[1];
+    return '<div class="agent-tile' + cls + '">' +
+      '<b>' + escapeHtml(key) + '</b>' +
+      '<small>' + escapeHtml(desc) + '</small>' +
+      '<span class="agent-chip">' + escapeHtml(label) + '</span>' +
+    '</div>';
+  }).join('');
+}
+function updateAgentBoard(trace, step) {
+  if (!trace.board) return;
+  Object.keys(trace.agents).forEach(function(key) { trace.agents[key].active = false; });
+  var role = normalizeAgentRole(step.agent_role || inferAgentName(step));
+  if (!trace.agents[role]) trace.agents[role] = {};
+  trace.agents[role].active = true;
+  trace.agents[role].done = true;
+  trace.agents[role].status = '执行中';
+  trace.agents[role].decision = step.agent_decision || step.tool_result_status || step.next_action || step.intent || '已参与';
+  trace.agents[role].contribution = step.agent_contribution || summarizeStep(step) || '完成当前职责';
+  trace.board.innerHTML = renderAgentBoard(trace.agents, trace.graphName);
+}
+function renderSidebarAgents() {
+  var list = document.getElementById('sidebarAgentList');
+  if (!list) return;
+  var hasAny = Object.keys(sidebarAgents).length > 0;
+  if (!hasAny) {
+    list.innerHTML = '<div class="sidebar-agent-item"><span class="sidebar-agent-dot"></span><div><b>等待任务启动</b><small>发送诊断请求后，Agent 状态将在此实时更新</small></div></div>';
+    return;
+  }
+  list.innerHTML = agentOrder.map(function(item) {
+    var key = item[0];
+    var data = sidebarAgents[key] || {};
+    var cls = data.active ? ' active' : data.done ? ' done' : '';
+    var label = data.decision || data.status || '待参与';
+    var desc = data.contribution || item[1];
+    return '<div class="sidebar-agent-item' + cls + '">' +
+      '<span class="sidebar-agent-dot"></span>' +
+      '<div><b>' + escapeHtml(key) + '</b>' +
+      '<small>' + escapeHtml(label + ' · ' + desc) + '</small></div>' +
+      '</div>';
+  }).join('');
+}
+function updateSidebarAgents(step) {
+  Object.keys(sidebarAgents).forEach(function(key) { sidebarAgents[key].active = false; });
+  var role = normalizeAgentRole(step.agent_role || inferAgentName(step));
+  if (!sidebarAgents[role]) sidebarAgents[role] = {};
+  sidebarAgents[role].active = true;
+  sidebarAgents[role].done = true;
+  sidebarAgents[role].status = '执行中';
+  sidebarAgents[role].decision = step.agent_decision || step.tool_result_status || step.next_action || step.intent || '已参与';
+  sidebarAgents[role].contribution = step.agent_contribution || summarizeStep(step) || '完成当前职责';
+  renderSidebarAgents();
+}
+function resetSidebar() {
+  sidebarAgents = {};
+  renderSidebarAgents();
+}
+function normalizeAgentRole(role) {
+  role = String(role || '');
+  if (agentOrder.some(function(item){ return item[0] === role; })) return role;
+  if (role.indexOf('Context') >= 0) return 'WorkflowContextAgent';
+  if (role.indexOf('Router') >= 0) return 'RouterAgent';
+  if (role.indexOf('Planner') >= 0 || role.indexOf('Replanner') >= 0) return 'PlannerAgent';
+  if (role.indexOf('Tool') >= 0) return 'ToolAgent';
+  if (role.indexOf('RAG') >= 0 || role.indexOf('Knowledge') >= 0) return 'KnowledgeAgent';
+  if (role.indexOf('Evidence') >= 0 || role.indexOf('Validator') >= 0) return 'EvidenceAgent';
+  if (role.indexOf('Safety') >= 0 || role.indexOf('Risk') >= 0) return 'SafetyReviewAgent';
+  if (role.indexOf('Report') >= 0 || role.indexOf('Writer') >= 0 || role.indexOf('Recommend') >= 0 || role.indexOf('Final') >= 0) return 'ReportAgent';
+  return 'RouterAgent';
 }
 function archiveActiveTraceItem(trace) {
   if (!trace.activeItem) return;
@@ -1967,9 +2478,12 @@ function summarizeStep(step) {
   var node = String(step.node || '').toLowerCase();
   if (node.indexOf('router') >= 0 && step.intent) info.push('路由到 ' + step.intent);
   if (node.indexOf('context') >= 0 && step.workflow_context) info.push('装载流程与图谱上下文');
+  if (step.agent_contribution) info.push(step.agent_contribution);
   if (node.indexOf('rag') >= 0 && step.rag_results) info.push('召回 ' + asArray(step.rag_results).length + ' 条知识');
   if ((node.indexOf('planner') >= 0 || node === 'planner') && step.plan_steps) info.push('生成 ' + asArray(step.plan_steps).length + ' 步计划');
   if ((node.indexOf('executor') >= 0 || node.indexOf('tool') >= 0) && step.step_results) info.push('完成 ' + asArray(step.step_results).length + ' 条工具结果');
+  if (step.step_results_delta_count) info.push('新增工具结果 ' + step.step_results_delta_count + ' 条');
+  if (step.tool_result_summary && step.tool_result_summary.failed) info.push('失败 ' + step.tool_result_summary.failed + ' 条');
   if (node.indexOf('evidence') >= 0) info.push('校验证据覆盖');
   if (node.indexOf('recommend') >= 0) info.push('生成处置建议');
   if (node.indexOf('safety') >= 0) info.push('执行安全复核');
@@ -1984,13 +2498,14 @@ function summarizeStep(step) {
 }
 function buildTraceDetail(step) {
   var tags = [];
-  ['trace_id','sequence','status','node_category','measured_node','node_duration_ms','cumulative_elapsed_ms','intent','risk_level','review_decision','next_action','evidence_score','evidence_coverage','loop_count'].forEach(function(key) {
+  ['agent_role','agent_contribution','agent_decision','trace_id','sequence','status','node_category','measured_node','node_duration_ms','cumulative_elapsed_ms','intent','risk_level','review_decision','next_action','evidence_score','evidence_coverage','loop_count','step_results_total','step_results_delta_count','tool_result_status'].forEach(function(key) {
     if (step[key] !== undefined && step[key] !== null) tags.push('<span class="tag">' + escapeHtml(key + ': ' + compactValue(step[key])) + '</span>');
   });
   var sections = [];
   if (tags.length) sections.push('<div class="trace-kv">' + tags.join('') + '</div>');
   if (step.plan_steps) sections.push('<b>执行计划</b>' + renderCompactList(step.plan_steps, formatPlanStep));
-  if (step.step_results) sections.push('<b>工具返回</b>' + renderCompactList(step.step_results, formatStepResult));
+  if (step.tool_result_summary) sections.push('<b>工具概况</b>' + renderToolSummary(step.tool_result_summary));
+  if (step.step_results) sections.push('<b>本节点工具返回</b>' + renderCompactList(step.step_results, formatStepResult));
   if (step.rag_results) sections.push('<b>知识召回</b>' + renderCompactList(step.rag_results, formatEvidence));
   if (step.workflow_context) sections.push('<b>流程上下文</b>' + renderTraceRaw(step.workflow_context, summarizeContext(step.workflow_context)));
   if (step.entities) sections.push('<b>识别实体</b>' + renderTraceRaw(step.entities, compactValue(step.entities)));
@@ -2001,8 +2516,24 @@ function renderCompactList(value, formatter) {
   var arr = asArray(value);
   if (!arr.length) return '<pre class="trace-json">' + escapeHtml(prettyJson(value)) + '</pre>';
   return '<div class="route-stack">' + arr.slice(0, 8).map(function(item, index) {
-    return '<div class="route-card"><b>' + escapeHtml(formatter(item, index)) + '</b><small>' + escapeHtml(compactValue(item)) + '</small></div>';
+    var status = String(item.status || '').toUpperCase();
+    var cls = status === 'FAILED' || status === 'ERROR' ? ' failed' : status === 'COMPLETED' || status === 'SUCCESS' ? ' completed' : '';
+    return '<div class="route-card' + cls + '"><b>' + escapeHtml(formatter(item, index)) + '</b><small>' + escapeHtml(compactValue(item)) + '</small></div>';
   }).join('') + '</div>';
+}
+function renderToolSummary(summary) {
+  if (!summary || typeof summary !== 'object') return '';
+  var parts = [
+    '<span class="tag">总数: ' + escapeHtml(summary.total || 0) + '</span>',
+    '<span class="tag">成功: ' + escapeHtml(summary.success || 0) + '</span>',
+    '<span class="tag">失败: ' + escapeHtml(summary.failed || 0) + '</span>'
+  ];
+  if (summary.failuresByType) {
+    Object.keys(summary.failuresByType).forEach(function(type) {
+      parts.push('<span class="tag">' + escapeHtml(readableErrorType(type) + ': ' + summary.failuresByType[type]) + '</span>');
+    });
+  }
+  return '<div class="trace-kv">' + parts.join('') + '</div>';
 }
 function formatPlanStep(step, index) {
   var tool = step.toolName || step.tool;
@@ -2011,7 +2542,8 @@ function formatPlanStep(step, index) {
 function formatStepResult(result, index) {
   var tool = result.toolName || result.tool;
   var action = result.action || toolLabel(tool) || '工具结果';
-  return (index + 1) + '. ' + action + (tool ? ' / ' + toolLabel(tool) : '') + ' / ' + statusText(result.status);
+  var reason = result.errorType || result.error_type ? ' / ' + readableErrorType(result.errorType || result.error_type) : '';
+  return (index + 1) + '. ' + action + (tool ? ' / ' + toolLabel(tool) : '') + ' / ' + statusText(result.status) + reason;
 }
 function formatEvidence(item, index) {
   return (index + 1) + '. ' + (item.title || item.documentName || item.source || item.id || '证据片段');
@@ -2029,6 +2561,7 @@ function compactValue(value) {
     var parts = [];
     if (obj.status) parts.push('状态：' + statusText(obj.status));
     if (obj.toolName || obj.tool) parts.push('能力：' + toolLabel(obj.toolName || obj.tool));
+    if (obj.errorType || obj.error_type) parts.push('原因：' + readableErrorType(obj.errorType || obj.error_type));
     if (obj.durationMs || obj.duration_ms) parts.push('耗时：' + formatElapsed(obj.durationMs || obj.duration_ms));
     if (obj.error) parts.push('异常：' + obj.error);
     if (obj.result && parts.length < 3) parts.push('结果：' + truncate(String(obj.result).replace(/\s+/g, ' '), 120));
@@ -2046,6 +2579,22 @@ function statusText(status) {
   if (s === 'PENDING') return '待执行';
   if (s === 'SKIPPED') return '跳过';
   return status || '-';
+}
+function readableErrorType(type) {
+  var map = {
+    TOOL_NOT_REGISTERED: '工具未注册',
+    TOOL_NOT_FOUND: '工具未注册',
+    DATA_SOURCE_NOT_CONNECTED: '数据源未接入',
+    MOCK_DATA_MISSING: '演示数据缺失',
+    PARAMETER_MISMATCH: '参数不匹配',
+    INTERFACE_EXCEPTION: '接口异常',
+    INTERFACE_TIMEOUT: '接口超时',
+    INTERFACE_UNAUTHORIZED: '接口未授权',
+    INVALID_RESPONSE_SCHEMA: '返回结构不合法',
+    INVALID_RESPONSE_FORMAT: '返回格式不合法',
+    EMPTY_TOOL_RESULT: '工具无返回'
+  };
+  return map[type] || type || '未分类错误';
 }
 function prettyJson(value) {
   try { return typeof value === 'string' ? value : JSON.stringify(value, null, 2); } catch (e) { return String(value); }
@@ -2078,9 +2627,15 @@ function finishTrace(trace, label) {
     var badge = item.querySelector('.trace-badge');
     if (badge && item.classList.contains('status')) badge.textContent = 'done';
   });
+  if (trace.board) {
+    Object.keys(trace.agents || {}).forEach(function(key) { trace.agents[key].active = false; });
+    trace.board.innerHTML = renderAgentBoard(trace.agents || {}, trace.graphName);
+  }
   trace.activeItem = null;
   trace.archive.open = false;
   updateArchiveSummary(trace, true);
+  Object.keys(sidebarAgents).forEach(function(key) { sidebarAgents[key].active = false; });
+  renderSidebarAgents();
 }
 function formatElapsed(ms) {
   ms = Number(ms) || 0;
@@ -2101,6 +2656,7 @@ async function sendMessage() {
   addTypingIndicator();
   try {
     removeTypingIndicator();
+    resetSidebar();
     var trace = createTraceView('Agent 执行轨迹');
     var resp = await fetch('/api/chat/stream-graph', {
       method: 'POST',
@@ -2160,6 +2716,7 @@ async function startDiagnosisWithTask(taskId, desc) {
   addTypingIndicator();
   try {
     removeTypingIndicator();
+    resetSidebar();
     var trace = createTraceView('诊断执行轨迹');
     var resp = await fetch('/api/alarm/diagnose', {
       method: 'POST',
@@ -2186,6 +2743,7 @@ function clearSession() {
   sessionId = generateSessionId();
   localStorage.setItem('gridops_sessionId', sessionId);
   fetch('/api/chat/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({sessionId: old}) }).catch(function(){});
+  resetSidebar();
   document.getElementById('messages').innerHTML = '<div class="empty">会话已清空</div>';
 }
 async function loadHistory() {

@@ -4,6 +4,11 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import org.example.agent.tool.DateTimeTools;
 import org.example.agent.tool.InternalDocsTools;
 import org.example.agent.tool.power.PowerAnalysisOperatorTools;
+import org.example.agent.tool.power.PowerAlarmHistoryTools;
+import org.example.agent.tool.power.PowerDefectTicketTools;
+import org.example.agent.tool.power.PowerDeviceLogsTools;
+import org.example.agent.tool.power.PowerDeviceProfileTools;
+import org.example.agent.tool.power.PowerDeviceStatusTools;
 import org.example.agent.tool.power.PowerSafetyRulesTools;
 import org.example.tool.ToolRegistryService;
 import org.slf4j.Logger;
@@ -20,7 +25,9 @@ import org.springframework.context.annotation.Primary;
 
 import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 public class ToolConfig {
@@ -40,6 +47,21 @@ public class ToolConfig {
     private PowerAnalysisOperatorTools powerAnalysisOperatorTools;
 
     @Autowired
+    private PowerDeviceStatusTools powerDeviceStatusTools;
+
+    @Autowired
+    private PowerAlarmHistoryTools powerAlarmHistoryTools;
+
+    @Autowired
+    private PowerDeviceLogsTools powerDeviceLogsTools;
+
+    @Autowired
+    private PowerDefectTicketTools powerDefectTicketTools;
+
+    @Autowired
+    private PowerDeviceProfileTools powerDeviceProfileTools;
+
+    @Autowired
     private ToolRegistryService toolRegistryService;
 
     @Bean
@@ -50,11 +72,19 @@ public class ToolConfig {
                         dateTimeTools,
                         internalDocsTools,
                         powerSafetyRulesTools,
-                        powerAnalysisOperatorTools
+                        powerAnalysisOperatorTools,
+                        powerDeviceStatusTools,
+                        powerAlarmHistoryTools,
+                        powerDeviceLogsTools,
+                        powerDefectTicketTools,
+                        powerDeviceProfileTools
                 )
                 .build();
 
-        List<ToolCallback> callbacks = new ArrayList<>(List.of(localTools.getToolCallbacks()));
+        Map<String, ToolCallback> callbacks = new LinkedHashMap<>();
+        for (ToolCallback callback : localTools.getToolCallbacks()) {
+            callbacks.put(callback.getToolDefinition().name(), callback);
+        }
         List<McpSyncClient> mcpSyncClients;
         try {
             mcpSyncClients = mcpSyncClientsProvider.getIfAvailable(List::of);
@@ -65,13 +95,22 @@ public class ToolConfig {
         if (!mcpSyncClients.isEmpty()) {
             try {
                 ToolCallbackProvider mcpTools = new SyncMcpToolCallbackProvider(mcpSyncClients);
-                callbacks.addAll(List.of(mcpTools.getToolCallbacks()));
+                for (ToolCallback callback : mcpTools.getToolCallbacks()) {
+                    String name = callback.getToolDefinition().name();
+                    if (callbacks.containsKey(name)) {
+                        logger.info("Skip duplicated MCP tool '{}'; local tool has priority", name);
+                        continue;
+                    }
+                    callbacks.put(name, callback);
+                }
             } catch (Exception e) {
                 logger.warn("Failed to register MCP tools; continuing with local tools only. error={}", e.getMessage());
             }
         }
 
-        return () -> callbacks.toArray(ToolCallback[]::new);
+        List<ToolCallback> deduplicated = new ArrayList<>(callbacks.values());
+        logger.info("Registered {} unique tool callbacks", deduplicated.size());
+        return () -> deduplicated.toArray(ToolCallback[]::new);
     }
 
     @PostConstruct

@@ -19,13 +19,10 @@ public class ToolResultValidator {
 
         String lower = result.toLowerCase(Locale.ROOT);
         if (lower.contains("timeout") || lower.contains("timed out")) {
-            return ValidationResult.invalid("工具调用超时", "TOOL_TIMEOUT", true);
+            return ValidationResult.invalid("工具调用超时", "INTERFACE_TIMEOUT", true);
         }
         if (lower.contains("unauthorized") || lower.contains("forbidden")) {
-            return ValidationResult.invalid("工具调用未授权", "TOOL_UNAUTHORIZED", false);
-        }
-        if (lower.contains("\"error\"") || lower.contains("failed") || lower.contains("失败")) {
-            return ValidationResult.invalid("工具返回错误结果", "TOOL_ERROR", true);
+            return ValidationResult.invalid("工具调用未授权", "INTERFACE_UNAUTHORIZED", false);
         }
 
         JsonNode json = null;
@@ -33,8 +30,13 @@ public class ToolResultValidator {
             try {
                 json = objectMapper.readTree(result);
             } catch (Exception e) {
-                return ValidationResult.invalid("工具返回不是合法 JSON: " + e.getMessage(), "INVALID_TOOL_JSON", true);
+                return ValidationResult.invalid("工具返回不是合法 JSON: " + e.getMessage(), "INVALID_RESPONSE_FORMAT", true);
             }
+        }
+
+        ValidationResult semanticFailure = validateSemanticFailure(json, result);
+        if (!semanticFailure.isValid()) {
+            return semanticFailure;
         }
 
         ValidationResult shapeResult = validateShape(toolName, json, result);
@@ -82,7 +84,38 @@ public class ToolResultValidator {
                 return ValidationResult.ok();
             }
         }
-        return ValidationResult.invalid("工具结果缺少期望业务字段: " + toolName, "TOOL_RESULT_SHAPE_MISMATCH", true);
+        return ValidationResult.invalid("工具结果缺少期望业务字段: " + toolName, "INVALID_RESPONSE_SCHEMA", true);
+    }
+
+    private ValidationResult validateSemanticFailure(JsonNode json, String raw) {
+        String lower = raw.toLowerCase(Locale.ROOT);
+        if (json != null) {
+            if (json.has("error")) {
+                return ValidationResult.invalid("工具接口异常: " + json.path("error").asText(), "INTERFACE_EXCEPTION", true);
+            }
+            String status = json.path("status").asText("");
+            String message = json.path("message").asText("");
+            String combined = (status + " " + message).toLowerCase(Locale.ROOT);
+
+            if (combined.contains("真实模式需要接入") || combined.contains("需要接入")) {
+                return ValidationResult.invalid("数据源未接入: " + message, "DATA_SOURCE_NOT_CONNECTED", true);
+            }
+            if ("error".equalsIgnoreCase(status) || "failed".equalsIgnoreCase(status) || "failure".equalsIgnoreCase(status)) {
+                return ValidationResult.invalid("工具接口异常: " + (message.isBlank() ? status : message), "INTERFACE_EXCEPTION", true);
+            }
+            if ("no_results".equalsIgnoreCase(status) || "未找到".equals(status)) {
+                return ValidationResult.invalid("演示数据未覆盖当前查询条件", "MOCK_DATA_MISSING", true);
+            }
+        } else {
+            if (lower.contains("真实模式需要接入") || lower.contains("需要接入")) {
+                return ValidationResult.invalid("数据源未接入", "DATA_SOURCE_NOT_CONNECTED", true);
+            }
+            if (lower.contains("tool execution failed") || lower.contains("http 5") || lower.contains("connection refused")) {
+                return ValidationResult.invalid("工具接口异常", "INTERFACE_EXCEPTION", true);
+            }
+        }
+
+        return ValidationResult.ok();
     }
 
     private boolean looksLikeJson(String result) {

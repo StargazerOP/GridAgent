@@ -81,10 +81,15 @@ public class FinalResponseNode implements NodeAction {
     private String readableErrorType(Map<?, ?> step) {
         String type = first(step, "errorType", "error_type");
         return switch (type) {
-            case "TOOL_NOT_FOUND" -> "工具未注册";
-            case "TOOL_RESULT_SHAPE_MISMATCH" -> "返回字段不完整";
-            case "TOOL_ERROR" -> "工具返回错误";
-            case "TOOL_TIMEOUT" -> "工具超时";
+            case "TOOL_NOT_REGISTERED", "TOOL_NOT_FOUND" -> "工具未注册";
+            case "DATA_SOURCE_NOT_CONNECTED" -> "数据源未接入";
+            case "MOCK_DATA_MISSING" -> "演示数据缺失";
+            case "PARAMETER_MISMATCH" -> "参数不匹配";
+            case "INTERFACE_EXCEPTION", "TOOL_ERROR" -> "接口异常";
+            case "INTERFACE_TIMEOUT", "TOOL_TIMEOUT" -> "接口超时";
+            case "INTERFACE_UNAUTHORIZED" -> "接口未授权";
+            case "INVALID_RESPONSE_SCHEMA", "TOOL_RESULT_SHAPE_MISMATCH" -> "返回结构不合法";
+            case "INVALID_RESPONSE_FORMAT", "INVALID_TOOL_JSON" -> "返回格式不合法";
             case "EMPTY_TOOL_RESULT" -> "工具无返回";
             default -> type.isBlank() || "null".equals(type) ? "未分类错误" : type;
         };

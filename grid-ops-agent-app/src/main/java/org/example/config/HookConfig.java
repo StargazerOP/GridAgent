@@ -1,6 +1,5 @@
 package org.example.config;
 
-import org.example.hook.AgentHook;
 import org.example.hook.HookEngine;
 import org.example.hook.impl.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +14,16 @@ public class HookConfig {
     private HookEngine hookEngine;
 
     @Autowired
-    private PreRouteHook preRouteHook;
+    private PostDiagnosisHook postDiagnosisHook;
 
     @Autowired
-    private PostRouteHook postRouteHook;
+    private AuditHook auditHook;
+
+    @Autowired
+    private HumanApprovalHook humanApprovalHook;
+
+    @Autowired
+    private SafetyCheckHook safetyCheckHook;
 
     @Autowired
     private PreRagHook preRagHook;
@@ -32,52 +37,20 @@ public class HookConfig {
     @Autowired
     private PostToolUseHook postToolUseHook;
 
-    @Autowired
-    private PreDiagnosisHook preDiagnosisHook;
-
-    @Autowired
-    private PostDiagnosisHook postDiagnosisHook;
-
-    @Autowired
-    private AuditHook auditHook;
-
-    @Autowired
-    private DataMaskingHook dataMaskingHook;
-
-    @Autowired
-    private HumanApprovalHook humanApprovalHook;
-
-    @Autowired
-    private SafetyCheckHook safetyCheckHook;
-
     @PostConstruct
     public void registerHooks() {
-        hookEngine.registerHook("PRE_ROUTE", auditHook);
-        hookEngine.registerHook("PRE_ROUTE", preRouteHook);
-
-        hookEngine.registerHook("POST_ROUTE", auditHook);
-        hookEngine.registerHook("POST_ROUTE", postRouteHook);
-
-        hookEngine.registerHook("PRE_RAG", auditHook);
-        hookEngine.registerHook("PRE_RAG", preRagHook);
-
-        hookEngine.registerHook("POST_RAG", auditHook);
-        hookEngine.registerHook("POST_RAG", postRagHook);
-
-        hookEngine.registerHook("PRE_TOOL_USE", auditHook);
-        hookEngine.registerHook("PRE_TOOL_USE", preToolUseHook);
-        hookEngine.registerHook("PRE_TOOL_USE", safetyCheckHook);
-
-        hookEngine.registerHook("POST_TOOL_USE", auditHook);
-        hookEngine.registerHook("POST_TOOL_USE", postToolUseHook);
-        hookEngine.registerHook("POST_TOOL_USE", dataMaskingHook);
-
-        hookEngine.registerHook("PRE_DIAGNOSIS", auditHook);
-        hookEngine.registerHook("PRE_DIAGNOSIS", preDiagnosisHook);
-
+        // POST_DIAGNOSIS hooks (existing)
         hookEngine.registerHook("POST_DIAGNOSIS", auditHook);
         hookEngine.registerHook("POST_DIAGNOSIS", postDiagnosisHook);
         hookEngine.registerHook("POST_DIAGNOSIS", safetyCheckHook);
         hookEngine.registerHook("POST_DIAGNOSIS", humanApprovalHook);
+
+        // RAG hooks (newly activated)
+        hookEngine.registerHook("PRE_RAG", preRagHook);
+        hookEngine.registerHook("POST_RAG", postRagHook);
+
+        // Tool-use hooks (newly activated)
+        hookEngine.registerHook("PRE_TOOL_USE", preToolUseHook);
+        hookEngine.registerHook("POST_TOOL_USE", postToolUseHook);
     }
 }

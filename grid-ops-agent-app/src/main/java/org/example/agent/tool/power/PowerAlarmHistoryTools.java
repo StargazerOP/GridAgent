@@ -1,6 +1,7 @@
 package org.example.agent.tool.power;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.service.MockDataLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Component
@@ -19,6 +19,7 @@ public class PowerAlarmHistoryTools {
 
     private static final Logger logger = LoggerFactory.getLogger(PowerAlarmHistoryTools.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final MockDataLoader mockDataLoader;
 
     @Value("${power.mock-enabled:true}")
     private boolean mockEnabled;
@@ -26,6 +27,10 @@ public class PowerAlarmHistoryTools {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter
             .ofPattern("yyyy-MM-dd HH:mm:ss")
             .withZone(ZoneId.of("Asia/Shanghai"));
+
+    public PowerAlarmHistoryTools(MockDataLoader mockDataLoader) {
+        this.mockDataLoader = mockDataLoader;
+    }
 
     @Tool(description = "查询电力设备历史告警记录。可以按设备、告警类型、时间范围等条件查询。" +
             "适用于了解设备过去的告警情况、判断告警是否重复出现等场景。")
@@ -44,39 +49,38 @@ public class PowerAlarmHistoryTools {
             result.put("queryTime", FORMATTER.format(Instant.now()));
 
             if (mockEnabled) {
-                List<Map<String, Object>> alarms = new ArrayList<>();
-                Instant now = Instant.now();
+                boolean alarmMissingScenario = containsAny(alarmType, "告警缺失", "无告警", "未告警", "缺失");
+                if (alarmMissingScenario) {
+                    result.put("status", "no_alarm_records");
+                    result.put("alarms", List.of());
+                    result.put("total", 0);
+                    result.put("analysis", "演示场景：设备状态存在异常，但历史告警未返回记录，需核查告警配置、遥信/遥测上送链路和告警抑制规则。");
+                    result.put("mockScenario", "ALARM_MISSING_CHECK");
+                    return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+                }
 
-                Map<String, Object> alarm1 = new LinkedHashMap<>();
-                alarm1.put("alarmId", "ALM202510180032");
-                alarm1.put("alarmTime", FORMATTER.format(now.minus(2, ChronoUnit.HOURS)));
-                alarm1.put("alarmType", "油温异常升高");
-                alarm1.put("alarmLevel", "重要");
-                alarm1.put("currentValue", "86℃");
-                alarm1.put("threshold", "80℃");
-                alarm1.put("status", "未处理");
-                alarms.add(alarm1);
-
-                Map<String, Object> alarm2 = new LinkedHashMap<>();
-                alarm2.put("alarmId", "ALM202510050018");
-                alarm2.put("alarmTime", FORMATTER.format(now.minus(15, ChronoUnit.DAYS)));
-                alarm2.put("alarmType", "冷却器控制回路异常");
-                alarm2.put("alarmLevel", "一般");
-                alarm2.put("status", "已处理");
-                alarms.add(alarm2);
-
-                Map<String, Object> alarm3 = new LinkedHashMap<>();
-                alarm3.put("alarmId", "ALM202509030025");
-                alarm3.put("alarmTime", FORMATTER.format(now.minus(45, ChronoUnit.DAYS)));
-                alarm3.put("alarmType", "温控器动作不灵敏");
-                alarm3.put("alarmLevel", "一般");
-                alarm3.put("status", "已处理");
-                alarms.add(alarm3);
+                List<Map<String, Object>> alarms = mockDataLoader.getAlarmHistoryFiltered(deviceId, alarmType);
+                if (alarms.size() > actualLimit) {
+                    alarms = alarms.subList(0, actualLimit);
+                }
 
                 result.put("alarms", alarms);
                 result.put("total", alarms.size());
+
+                if (alarms.isEmpty()) {
+                    result.put("analysis", "该设备近期无" + (alarmType != null ? alarmType + "相关" : "") + "告警记录。");
+                } else {
+                    long unprocessed = alarms.stream().filter(a -> "未处理".equals(a.get("status"))).count();
+                    result.put("analysis", "共查到" + alarms.size() + "条告警记录，其中" + unprocessed + "条未处理。");
+                }
+
+                if (!alarms.isEmpty()) {
+                    result.put("mockScenario", "PARAMETERIZED_FROM_DATA");
+                }
             } else {
-                result.put("message", "真实模式需要接入监控告警系统");
+                result.put("error", "真实数据源未接入");
+                result.put("mode", "REAL_MODE_UNAVAILABLE");
+                result.put("message", "请接入监控告警系统后使用");
             }
 
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
@@ -84,5 +88,17 @@ public class PowerAlarmHistoryTools {
             logger.error("查询历史告警失败", e);
             return "{\"error\":\"" + e.getMessage() + "\"}";
         }
+    }
+
+    private boolean containsAny(String value, String... tokens) {
+        if (value == null) {
+            return false;
+        }
+        for (String token : tokens) {
+            if (value.contains(token)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

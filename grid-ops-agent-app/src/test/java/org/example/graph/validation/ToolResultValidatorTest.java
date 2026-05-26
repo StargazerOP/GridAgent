@@ -30,6 +30,6 @@ class ToolResultValidatorTest {
         ValidationResult result = validator.validate("getDeviceLogs", "{\"error\":\"timeout\"}");
 
         assertThat(result.isValid()).isFalse();
-        assertThat(result.getErrorType()).isEqualTo("TOOL_TIMEOUT");
+        assertThat(result.getErrorType()).isEqualTo("INTERFACE_TIMEOUT");
     }
 }

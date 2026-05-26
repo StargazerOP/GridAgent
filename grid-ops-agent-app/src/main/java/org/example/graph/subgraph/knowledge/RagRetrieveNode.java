@@ -19,11 +19,24 @@ public class RagRetrieveNode implements NodeAction {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Map<String, Object> apply(OverAllState state) throws Exception {
         String input = state.value("cleaned_input").map(Object::toString).orElse("");
-        logger.info("RagRetrieveNode: Hybrid RAG检索, input={}", input);
+        Object entitiesObj = state.value("entities").orElse(Map.of());
 
-        List<HybridSearchService.HybridSearchResult> results = hybridSearchService.hybridSearch(input, 5);
+        StringBuilder searchQuery = new StringBuilder(input);
+        if (entitiesObj instanceof Map<?, ?> entities && !entities.isEmpty()) {
+            if (entities.containsKey("deviceType")) {
+                searchQuery.append(" ").append(entities.get("deviceType"));
+            }
+            if (entities.containsKey("faultType")) {
+                searchQuery.append(" ").append(entities.get("faultType"));
+            }
+        }
+
+        logger.info("RagRetrieveNode: Hybrid RAG检索, query={}", searchQuery);
+
+        List<HybridSearchService.HybridSearchResult> results = hybridSearchService.hybridSearch(searchQuery.toString(), 5);
         StringBuilder context = new StringBuilder();
         for (HybridSearchService.HybridSearchResult r : results) {
             context.append(r.getContent()).append("\n\n");

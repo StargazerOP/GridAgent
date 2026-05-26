@@ -1,5 +1,65 @@
 [
   {
+    "source": "workflow_diagnosis_transformer_oil_temp_high",
+    "target": "tool_getDeviceProfile",
+    "type": "orchestrates",
+    "order": 1
+  },
+  {
+    "source": "workflow_diagnosis_transformer_oil_temp_high",
+    "target": "tool_getDeviceStatus",
+    "type": "orchestrates",
+    "order": 2
+  },
+  {
+    "source": "workflow_diagnosis_transformer_oil_temp_high",
+    "target": "tool_getAlarmHistory",
+    "type": "orchestrates",
+    "order": 3
+  },
+  {
+    "source": "workflow_diagnosis_transformer_oil_temp_high",
+    "target": "tool_getDeviceLogs",
+    "type": "orchestrates",
+    "order": 4
+  },
+  {
+    "source": "workflow_diagnosis_transformer_oil_temp_high",
+    "target": "tool_getDefectTickets",
+    "type": "orchestrates",
+    "order": 5
+  },
+  {
+    "source": "workflow_diagnosis_transformer_oil_temp_high",
+    "target": "tool_regulation_retriever",
+    "type": "orchestrates",
+    "order": 6
+  },
+  {
+    "source": "workflow_diagnosis_transformer_oil_temp_high",
+    "target": "tool_topology_analyzer",
+    "type": "orchestrates",
+    "order": 7
+  },
+  {
+    "source": "workflow_diagnosis_transformer_oil_temp_high",
+    "target": "tool_llm",
+    "type": "orchestrates",
+    "order": 8
+  },
+  {
+    "source": "workflow_diagnosis_transformer_oil_temp_high",
+    "target": "rule_transformer_oil_temp_threshold",
+    "type": "uses_rule",
+    "order": 9
+  },
+  {
+    "source": "workflow_diagnosis_transformer_oil_temp_high",
+    "target": "rule_cooler_abnormal_response",
+    "type": "uses_rule",
+    "order": 10
+  },
+  {
     "source": "workflow_fault_substation_blackout",
     "target": "tool_slot_filler",
     "type": "orchestrates",

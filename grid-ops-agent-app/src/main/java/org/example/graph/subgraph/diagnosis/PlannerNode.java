@@ -46,7 +46,11 @@ public class PlannerNode implements NodeAction {
 
         List<Object> rawSteps = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
+        rawSteps.addAll(readWorkflowSeedPlan(workflowContext, warnings));
         try {
+            if (!rawSteps.isEmpty()) {
+                warnings.add("Workflow template plan seed was used as the executable plan draft.");
+            } else {
             String llmResponse = chatClient.prompt()
                     .system(plannerPrompt())
                     .user(userMessage(input, ragContext, skillContext, workflowContext, entities, state))
@@ -58,9 +62,10 @@ public class PlannerNode implements NodeAction {
             if (stepsObj instanceof List<?> list) {
                 rawSteps.addAll(list);
             }
+            }
         } catch (Exception e) {
-            warnings.add("LLM plan generation failed, default template was used: " + e.getMessage());
-            logger.warn("PlannerNode: LLM plan generation failed, using default template, error={}", e.getMessage());
+            warnings.add("LLM plan generation failed, falling back to planValidator defaults: " + e.getMessage());
+            logger.warn("PlannerNode: LLM plan generation failed, planValidator will supply defaults, error={}", e.getMessage());
         }
 
         List<PlanStep> planSteps = planValidator.normalizeOrDefault(rawSteps, input, entities, tools, warnings);
@@ -72,6 +77,34 @@ public class PlannerNode implements NodeAction {
         }
         logger.info("PlannerNode: plan ready, steps={}, warnings={}", planSteps.size(), warnings.size());
         return result;
+    }
+
+    private List<Object> readWorkflowSeedPlan(String workflowContext, List<String> warnings) {
+        if (workflowContext == null || workflowContext.isBlank()) {
+            return List.of();
+        }
+        try {
+            Map<String, Object> context = OBJECT_MAPPER.readValue(workflowContext, new TypeReference<>() {});
+            double score = 0;
+            Object scoreObj = context.get("match_score");
+            if (scoreObj instanceof Number number) {
+                score = number.doubleValue();
+            } else if (scoreObj != null) {
+                score = Double.parseDouble(String.valueOf(scoreObj));
+            }
+            Object planObj = context.get("plan_steps");
+            if (planObj instanceof List<?> list && !list.isEmpty()) {
+                if (score >= 5.0) {
+                    warnings.add("Workflow context matched strongly; using template plan seed, score=" + score);
+                } else {
+                    warnings.add("Workflow context matched weakly (score=" + score + "); template steps used as seed, planValidator will normalize");
+                }
+                return new ArrayList<>(list);
+            }
+        } catch (Exception e) {
+            warnings.add("Workflow plan seed could not be parsed: " + e.getMessage());
+        }
+        return List.of();
     }
 
     private String plannerPrompt() {

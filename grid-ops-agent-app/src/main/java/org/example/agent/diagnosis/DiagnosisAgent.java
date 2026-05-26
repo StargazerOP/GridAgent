@@ -1,6 +1,7 @@
 package org.example.agent.diagnosis;
 
 import org.example.config.LlmFactory;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,5 +76,19 @@ public class DiagnosisAgent {
                 .systemPrompt(DIAGNOSIS_PROMPT)
                 .tools(tools.getToolCallbacks())
                 .build();
+    }
+
+    public String generateWithoutTools(String diagnosisInput) {
+        return ChatClient.create(llmFactory.diagnosisChatModel())
+                .prompt()
+                .system(DIAGNOSIS_PROMPT + """
+
+                        当前处于降级总结模式：不要再调用任何工具。
+                        只能基于用户输入、已有工具结果、RAG 片段、流程模板和证据摘要生成结论。
+                        如果证据不足，请明确列出“已确认事实”和“仍需补充数据”，不要编造实时数据。
+                        """)
+                .user(diagnosisInput)
+                .call()
+                .content();
     }
 }

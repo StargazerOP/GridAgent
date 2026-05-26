@@ -62,19 +62,19 @@ GridOpsAgent 不是一个简单的聊天接口包装，而是把电力运维流�
 | DeepSeek LLM 调用 | 已落地 | 通过 Spring AI OpenAI 兼容接口调用，API Key 读取环境变量 `DEEPSEEK_API_KEY`。 |
 | Graph 主流程执行 | 已落地 | `/api/chat/stream-graph` 会实际运行 `pre_check -> context_load -> router -> 子图 -> safety_review -> final_response -> memory_save`，前端显示真实节点事件。 |
 | Graph 节点耗时 | 已落地 | 后端在 `ObservedNodeAction` 统计单节点耗时，SSE 同时返回节点耗时和累计耗时。 |
-| 任务编排台流程匹配 | 预览能力 | 调用 `/api/knowledge-org/instant-plan`，只做模板匹配和计划草案生成，不执行工具、不产生真实证据。 |
+| 执行前检查台 | 已落地 | 调用 `/api/knowledge-org/instant-plan`，完成模板匹配、目标 Graph 判断、计划步骤生成和数据可用性检查；不直接执行工具，但展示后续执行会依赖的数据与半真实推演步骤。 |
 | nari 工作流模板 | 已落地为资源 | 9 个模板已迁移到 classpath 资源，供页面匹配和 Planner 上下文使用。 |
 | nari 知识图谱 | 已落地为资源 | 71 个节点、255 条边已迁移到 classpath 资源，供拓扑页面和图谱工具查询。 |
 | MCP 工具服务 | 已落地但默认 mock 数据 | `power-tools-mcp-server` 独立运行并暴露设备状态、告警历史、日志、工单、台账工具；当前默认返回模拟电力数据。 |
 | RAG 文档上传与检索 | 已落地 | 文档上传、切片、向量检索、Milvus/内存向量存储链路已实现。检索质量取决于已上传文档和 embedding 可用性。 |
 | Skill Registry | 已落地 | 内置 5 个 Skill，当前主要作为场景提示、推荐工具和诊断流程参考。 |
-| 潮流计算 | mock/estimate | `calculatePowerFlowEstimate` 是估算演示，不是真实 EMS/DTS 潮流计算。 |
-| 操作风险校核 | mock/estimate | `checkOperationRisk` 基于模板、图谱和规则提示生成风险结论，不是真实在线安全校核。 |
-| 故障场景生成 | mock/estimate | `generateFaultScenario` 生成模拟场景，适合作为预案草案和复核线索。 |
+| 潮流计算 | 半真实规则估算 | `calculatePowerFlowEstimate` 基于 mock-data 设备状态、知识图谱邻接关系和规则阈值估算，不是真实 EMS/DTS 潮流计算。 |
+| 操作风险校核 | 半真实规则推理 | `checkOperationRisk` 基于设备状态、告警、缺陷、图谱和规则阈值计算风险分，不是真实在线安全校核。 |
+| 故障场景生成 | 半真实场景推演 | `generateFaultScenario` 根据设备状态、告警、缺陷和任务语义生成候选场景，适合作为预案草案和复核线索。 |
 | RBAC / 审批 / Hook / 审计 | 部分落地 | 代码中有服务、节点和接口，适合演示治理链路；生产级用户体系、权限数据和审批流仍需接入真实系统。 |
 | 前端知识拓扑 | 已落地展示 | 可浏览流程编排、工具依赖、知识约束和当前任务子图。 |
 
-因此，页面上的“任务编排台”是规划预览；“协同诊断会话”里的 Agent 执行轨迹才是实际 Graph 运行结果。
+因此，页面上的“执行前检查台”用于确认任务将进入哪条 Graph、哪些数据可用、哪些步骤仍为半真实推演；“协同诊断会话”里的 Agent 执行轨迹才是实际 Graph 运行结果。
 
 ## 应用场景
 
@@ -86,7 +86,7 @@ GridOpsAgent 不是一个简单的聊天接口包装，而是把电力运维流�
 | 故障诊断 | 结合 RAG、实时数据、日志、工单和风险复核生成结构化诊断报告。 |
 | 知识库管理 | 上传电力文档，构建可检索、可引用、可版本管理的运维知识库。 |
 | 工具治理 | 对工具进行搜索、分类、高风险识别和统一调用。 |
-| 流程编排展示 | 输入调度/运维任务后，匹配 nari 迁移来的工作流模板，展示候选流程、工具链和任务相关子图。 |
+| 执行前检查 | 输入调度/运维任务后，匹配 nari 迁移来的工作流模板，展示目标 Graph、工具链、数据可用性和任务相关子图。 |
 
 ## 项目结构
 

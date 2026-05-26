@@ -1,5 +1,87 @@
 [
   {
+    "id": "workflow_diagnosis_transformer_oil_temp_high",
+    "name": "主变油温异常诊断流程",
+    "category": "skill_process",
+    "role": "workflow",
+    "description": "围绕主变油温越限，联合设备台账、实时状态、历史告警、运行日志、缺陷工单、安规和拓扑关系形成诊断结论。",
+    "template_id": "diagnosis_transformer_oil_temp_high",
+    "scene": "equipment_diagnosis",
+    "keywords": ["主变", "变压器", "油温", "冷却器", "负荷率", "告警缺失", "TR-110KV-001"],
+    "typical_steps": [
+      "识别主变编号、油温数值和越限阈值",
+      "查询主变设备台账和温度阈值",
+      "查询主变实时油温、负荷和冷却器状态",
+      "查询油温和冷却器相关历史告警",
+      "查询主变近期运行日志和冷却器动作记录",
+      "查询冷却器、风机和温控回路缺陷工单",
+      "检索变压器油温异常处置规程",
+      "分析主变拓扑影响和运行风险",
+      "形成油温异常诊断结论和处置建议"
+    ]
+  },
+  {
+    "id": "tool_getDeviceProfile",
+    "name": "设备台账查询工具",
+    "category": "tool_call",
+    "role": "data_query_tool",
+    "description": "查询主变等设备的型号、容量、冷却方式、温度阈值、投运和检修信息。",
+    "keywords": ["设备台账", "主变参数", "油温阈值", "冷却方式"],
+    "tool_subtype": "data_query_tool"
+  },
+  {
+    "id": "tool_getDeviceStatus",
+    "name": "设备实时状态查询工具",
+    "category": "tool_call",
+    "role": "data_query_tool",
+    "description": "查询主变油温、负荷率、冷却器状态、风机状态、油位和环境温度等运行指标。",
+    "keywords": ["实时状态", "油温", "负荷率", "冷却器", "风机"],
+    "tool_subtype": "data_query_tool"
+  },
+  {
+    "id": "tool_getAlarmHistory",
+    "name": "历史告警查询工具",
+    "category": "tool_call",
+    "role": "data_query_tool",
+    "description": "查询设备油温、冷却器、温控回路等历史告警，用于判断重复故障和告警缺失。",
+    "keywords": ["历史告警", "油温异常", "冷却器异常", "告警缺失"],
+    "tool_subtype": "data_query_tool"
+  },
+  {
+    "id": "tool_getDeviceLogs",
+    "name": "运行日志查询工具",
+    "category": "tool_call",
+    "role": "data_query_tool",
+    "description": "查询设备运行日志、冷却器动作记录、温控动作和运行人员记录。",
+    "keywords": ["运行日志", "冷却器动作", "温控记录"],
+    "tool_subtype": "data_query_tool"
+  },
+  {
+    "id": "tool_getDefectTickets",
+    "name": "缺陷工单查询工具",
+    "category": "tool_call",
+    "role": "data_query_tool",
+    "description": "查询冷却器、风机、油泵和温控回路缺陷工单，辅助判断重复缺陷。",
+    "keywords": ["缺陷工单", "冷却器缺陷", "风机缺陷", "温控回路"],
+    "tool_subtype": "data_query_tool"
+  },
+  {
+    "id": "rule_transformer_oil_temp_threshold",
+    "name": "主变油温越限规则",
+    "category": "knowledge_entity",
+    "role": "rule",
+    "description": "主变上层油温超过告警阈值时，应核实测点、负荷、冷却器、油位和历史趋势，并及时采取降温措施。",
+    "keywords": ["油温阈值", "主变油温", "越限", "降负荷"]
+  },
+  {
+    "id": "rule_cooler_abnormal_response",
+    "name": "冷却器异常处置规则",
+    "category": "knowledge_entity",
+    "role": "rule",
+    "description": "冷却器风机、油泵或控制回路异常时，应核查电源、控制回路、备用冷却器投入和现场缺陷处理情况。",
+    "keywords": ["冷却器异常", "风机启动失败", "油泵", "备用冷却器"]
+  },
+  {
     "id": "workflow_fault_substation_blackout",
     "name": "变电站全停故障处置流程",
     "category": "skill_process",

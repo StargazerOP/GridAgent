@@ -1,7 +1,7 @@
 package org.example.agent.tool.power;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
+import org.example.service.MockDataLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
@@ -20,6 +20,7 @@ public class PowerDeviceStatusTools {
 
     private static final Logger logger = LoggerFactory.getLogger(PowerDeviceStatusTools.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final MockDataLoader mockDataLoader;
 
     @Value("${power.mock-enabled:true}")
     private boolean mockEnabled;
@@ -27,6 +28,10 @@ public class PowerDeviceStatusTools {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter
             .ofPattern("yyyy-MM-dd HH:mm:ss")
             .withZone(ZoneId.of("Asia/Shanghai"));
+
+    public PowerDeviceStatusTools(MockDataLoader mockDataLoader) {
+        this.mockDataLoader = mockDataLoader;
+    }
 
     @Tool(description = "查询电力设备实时运行状态，包括油温、负荷率、冷却器状态、环境温度等指标。" +
             "适用于变压器、开关柜、断路器等电力设备。" +
@@ -45,31 +50,8 @@ public class PowerDeviceStatusTools {
 
             if (mockEnabled) {
                 result.put("status", "online");
-                Map<String, Object> metricsData = new LinkedHashMap<>();
 
-                if (deviceId.contains("TR") || deviceId.contains("主变")) {
-                    metricsData.put("oilTemperature", "86℃");
-                    metricsData.put("oilTemperatureThreshold", "80℃");
-                    metricsData.put("loadRate", "92%");
-                    metricsData.put("coolerStatus", "异常");
-                    metricsData.put("coolerFan1", "运行");
-                    metricsData.put("coolerFan2", "启动失败");
-                    metricsData.put("environmentTemp", "32℃");
-                    metricsData.put("oilLevel", "正常");
-                    metricsData.put("windingTemp", "78℃");
-                } else if (deviceId.contains("KG") || deviceId.contains("开关柜")) {
-                    metricsData.put("partialDischarge", "异常");
-                    metricsData.put("pdValue", "50pC");
-                    metricsData.put("pdThreshold", "30pC");
-                    metricsData.put("cabinetTemp", "42℃");
-                    metricsData.put("humidity", "65%");
-                    metricsData.put("busbarTemp", "55℃");
-                } else {
-                    metricsData.put("status", "运行");
-                    metricsData.put("loadRate", "75%");
-                    metricsData.put("temperature", "45℃");
-                }
-
+                Map<String, Object> metricsData = mockDataLoader.getDeviceStatusMock(deviceId);
                 result.put("metrics", metricsData);
 
                 Instant now = Instant.now();
@@ -77,13 +59,31 @@ public class PowerDeviceStatusTools {
                 for (int i = 5; i >= 0; i--) {
                     Map<String, Object> point = new LinkedHashMap<>();
                     point.put("time", FORMATTER.format(now.minus(i * 10, ChronoUnit.MINUTES)));
-                    point.put("oilTemperature", 82 + (5 - i) * 0.8);
-                    point.put("loadRate", 88 + (5 - i) * 0.8);
+                    if (metricsData.containsKey("oilTemperature")) {
+                        String tempStr = String.valueOf(metricsData.get("oilTemperature")).replace("℃", "");
+                        try {
+                            double baseTemp = Double.parseDouble(tempStr);
+                            point.put("oilTemperature", Math.round((baseTemp - 2 + (5 - i) * 0.8) * 10.0) / 10.0);
+                        } catch (NumberFormatException e) {
+                            point.put("oilTemperature", "N/A");
+                        }
+                    }
+                    if (metricsData.containsKey("loadRate")) {
+                        String loadStr = String.valueOf(metricsData.get("loadRate")).replace("%", "");
+                        try {
+                            double baseLoad = Double.parseDouble(loadStr);
+                            point.put("loadRate", Math.round((baseLoad - 2 + (5 - i) * 0.8) * 10.0) / 10.0);
+                        } catch (NumberFormatException e) {
+                            point.put("loadRate", "N/A");
+                        }
+                    }
                     trend.add(point);
                 }
                 result.put("trend", trend);
             } else {
                 result.put("message", "真实模式需要接入监控告警系统");
+                result.put("error", "真实数据源未接入");
+                result.put("mode", "REAL_MODE_UNAVAILABLE");
             }
 
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);

@@ -12,50 +12,79 @@ import java.util.Map;
 public class EvidenceQualityEvaluator {
 
     private static final Map<String, Integer> WEIGHTS = Map.of(
-            "DEVICE_PROFILE", 15,
+            "DEVICE_PROFILE", 20,
             "DEVICE_STATUS", 25,
-            "ALARM_HISTORY", 20,
-            "DEVICE_LOGS", 20,
+            "ALARM_HISTORY", 25,
+            "DEVICE_LOGS", 15,
             "DEFECT_TICKETS", 10,
-            "SAFETY_RULES", 10,
+            "SAFETY_RULES", 20,
             "RAG_DOCS", 10
     );
 
     public EvidenceScore evaluate(List<StepResult> stepResults, String evidence) {
         Map<String, Boolean> coverage = new LinkedHashMap<>();
-        WEIGHTS.keySet().forEach(type -> coverage.put(type, false));
+        Map<String, Boolean> toolSuccess = new LinkedHashMap<>();
+        WEIGHTS.keySet().forEach(type -> {
+            coverage.put(type, false);
+            toolSuccess.put(type, true);
+        });
+
+        int successCount = 0;
+        int failCount = 0;
 
         if (stepResults != null) {
             for (StepResult result : stepResults) {
-                if (Boolean.TRUE.equals(result.getMatchExpected()) || result.isSuccess()) {
-                    String evidenceType = result.getEvidenceType();
-                    if (evidenceType != null && coverage.containsKey(evidenceType)) {
-                        coverage.put(evidenceType, true);
+                String evidenceType = result.getEvidenceType();
+                if (evidenceType != null && coverage.containsKey(evidenceType)) {
+                    coverage.put(evidenceType, true);
+                }
+                if (result.isSuccess()) {
+                    successCount++;
+                } else {
+                    failCount++;
+                    if (evidenceType != null && toolSuccess.containsKey(evidenceType)) {
+                        toolSuccess.put(evidenceType, false);
                     }
                 }
             }
         }
 
+        // Text-based coverage as fallback
         String evidenceText = evidence == null ? "" : evidence;
         markByText(coverage, evidenceText);
 
         int score = coverage.entrySet().stream()
                 .filter(Map.Entry::getValue)
-                .mapToInt(entry -> WEIGHTS.getOrDefault(entry.getKey(), 0))
+                .mapToInt(entry -> {
+                    int weight = WEIGHTS.getOrDefault(entry.getKey(), 0);
+                    // Penalize failed tool calls for covered evidence types
+                    if (!toolSuccess.get(entry.getKey())) {
+                        weight = weight / 2;
+                    }
+                    return weight;
+                })
                 .sum();
 
+        // Penalize overall tool failures
+        if (failCount > 0) {
+            score = Math.max(0, score - failCount * 5);
+        }
+
         List<String> warnings = new ArrayList<>();
+        if (!coverage.get("DEVICE_PROFILE")) {
+            warnings.add("缺少设备档案证据");
+        }
         if (!coverage.get("DEVICE_STATUS")) {
             warnings.add("缺少实时状态证据");
         }
         if (!coverage.get("ALARM_HISTORY")) {
             warnings.add("缺少历史告警证据");
         }
-        if (!coverage.get("DEVICE_LOGS")) {
-            warnings.add("缺少运行日志证据");
-        }
         if (!coverage.get("SAFETY_RULES")) {
             warnings.add("缺少安全规程证据");
+        }
+        if (failCount > 0) {
+            warnings.add(failCount + " 个工具调用失败，证据完整性受影响");
         }
 
         String decision = score >= 70 ? "SUFFICIENT" : score >= 40 ? "NEED_MORE" : "INSUFFICIENT";

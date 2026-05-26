@@ -1,0 +1,301 @@
+{
+  "TR-110KV-001": [
+    {
+      "alarmId": "ALM202605180032",
+      "alarmTime": "2026-05-18T14:22:00",
+      "alarmType": "油温异常升高",
+      "alarmLevel": "重要",
+      "currentValue": "86℃",
+      "threshold": "80℃",
+      "status": "未处理",
+      "confirmedBy": null,
+      "notes": "本次告警，油温从14:12开始快速上升，伴随#2冷却器故障"
+    },
+    {
+      "alarmId": "ALM202605170045",
+      "alarmTime": "2026-05-17T09:15:00",
+      "alarmType": "冷却器控制回路异常",
+      "alarmLevel": "一般",
+      "currentValue": "KM2未吸合",
+      "threshold": null,
+      "status": "未处理",
+      "confirmedBy": null,
+      "notes": "#2冷却器接触器KM2间歇性无法吸合"
+    },
+    {
+      "alarmId": "ALM202605100018",
+      "alarmTime": "2026-05-10T16:45:00",
+      "alarmType": "油温偏高预警",
+      "alarmLevel": "提示",
+      "currentValue": "78℃",
+      "threshold": "75℃",
+      "status": "已确认",
+      "confirmedBy": "张建国",
+      "notes": "当天环境温度35℃，负荷92%，属可解释偏高"
+    },
+    {
+      "alarmId": "ALM202604280012",
+      "alarmTime": "2026-04-28T11:30:00",
+      "alarmType": "冷却器#2风机过载",
+      "alarmLevel": "一般",
+      "currentValue": "12.5A",
+      "threshold": "10A",
+      "status": "已处理",
+      "confirmedBy": "李伟",
+      "notes": "风机轴承润滑不良导致过载，已加注润滑脂后恢复正常"
+    },
+    {
+      "alarmId": "ALM202604150003",
+      "alarmTime": "2026-04-15T08:10:00",
+      "alarmType": "油位偏低",
+      "alarmLevel": "提示",
+      "currentValue": "45%",
+      "threshold": "50%",
+      "status": "已处理",
+      "confirmedBy": "张建国",
+      "notes": "补充变压器油后恢复正常油位"
+    },
+    {
+      "alarmId": "ALM202603220027",
+      "alarmTime": "2026-03-22T18:05:00",
+      "alarmType": "变压器过负荷",
+      "alarmLevel": "重要",
+      "currentValue": "105%",
+      "threshold": "100%",
+      "status": "已处理",
+      "confirmedBy": "王强",
+      "notes": "区域负荷突增导致短时过负荷，持续15分钟，已通过负荷转移消除"
+    },
+    {
+      "alarmId": "ALM202601050025",
+      "alarmTime": "2026-01-05T03:40:00",
+      "alarmType": "温控器动作不灵敏",
+      "alarmLevel": "一般",
+      "currentValue": "切换延迟8s",
+      "threshold": "3s",
+      "status": "已处理",
+      "confirmedBy": "李伟",
+      "notes": "温控器触点氧化导致动作延迟，已清洁触点"
+    }
+  ],
+  "TR-110KV-002": [
+    {
+      "alarmId": "ALM202605200005",
+      "alarmTime": "2026-05-20T10:15:00",
+      "alarmType": "绕组温度偏高",
+      "alarmLevel": "提示",
+      "currentValue": "72℃",
+      "threshold": "70℃",
+      "status": "已确认",
+      "confirmedBy": "张建国",
+      "notes": "负荷高峰期绕组温度略高，尚在可控范围"
+    },
+    {
+      "alarmId": "ALM202602140012",
+      "alarmTime": "2026-02-14T15:30:00",
+      "alarmType": "油中溶解气体异常",
+      "alarmLevel": "重要",
+      "currentValue": "乙炔0.8ppm",
+      "threshold": "0.5ppm",
+      "status": "已处理",
+      "confirmedBy": "李伟",
+      "notes": "油色谱在线监测显示微量乙炔，已取样送检，分析认为是OLTC切换产气"
+    }
+  ],
+  "TR-35KV-001": [
+    {
+      "alarmId": "ALM202605010008",
+      "alarmTime": "2026-05-01T02:00:00",
+      "alarmType": "低压侧电压波动",
+      "alarmLevel": "提示",
+      "currentValue": "385V",
+      "threshold": "380V±5%",
+      "status": "已确认",
+      "confirmedBy": "张建国",
+      "notes": "深夜负荷低谷期电压略偏高，有载调压正常"
+    }
+  ],
+  "KG-10KV-001": [
+    {
+      "alarmId": "ALM202605190022",
+      "alarmTime": "2026-05-19T20:35:00",
+      "alarmType": "开关柜局放异常",
+      "alarmLevel": "重要",
+      "currentValue": "50pC",
+      "threshold": "30pC",
+      "status": "未处理",
+      "confirmedBy": null,
+      "notes": "TEV传感器检测到局部放电量超标，疑似内部绝缘缺陷"
+    },
+    {
+      "alarmId": "ALM202605120041",
+      "alarmTime": "2026-05-12T14:10:00",
+      "alarmType": "开关柜温升异常",
+      "alarmLevel": "重要",
+      "currentValue": "42℃",
+      "threshold": "35℃（环境+15K）",
+      "status": "已处理",
+      "confirmedBy": "李伟",
+      "notes": "柜内母线接头处温度偏高，已紧固连接螺栓"
+    },
+    {
+      "alarmId": "ALM202603150033",
+      "alarmTime": "2026-03-15T09:50:00",
+      "alarmType": "开关柜湿度偏高",
+      "alarmLevel": "提示",
+      "currentValue": "75%",
+      "threshold": "70%",
+      "status": "已处理",
+      "confirmedBy": "王强",
+      "notes": "雨季湿度超标，已启动除湿装置"
+    }
+  ],
+  "KG-10KV-002": [
+    {
+      "alarmId": "ALM202605180055",
+      "alarmTime": "2026-05-18T16:00:00",
+      "alarmType": "馈线过负荷预警",
+      "alarmLevel": "提示",
+      "currentValue": "540A",
+      "threshold": "567A（90%额定）",
+      "status": "已确认",
+      "confirmedBy": "张建国",
+      "notes": "夏季空调负荷增加导致馈线电流偏高"
+    }
+  ],
+  "KG-10KV-003": [
+    {
+      "alarmId": "ALM202604200019",
+      "alarmTime": "2026-04-20T11:25:00",
+      "alarmType": "母联柜控制电源异常",
+      "alarmLevel": "一般",
+      "currentValue": "DC98V",
+      "threshold": "DC110V±10%",
+      "status": "已处理",
+      "confirmedBy": "李伟",
+      "notes": "直流屏蓄电池单体电压偏低，已更换"
+    }
+  ],
+  "DL-110KV-001": [
+    {
+      "alarmId": "ALM202605150036",
+      "alarmTime": "2026-05-15T07:45:00",
+      "alarmType": "SF6气压偏低预警",
+      "alarmLevel": "重要",
+      "currentValue": "0.53MPa",
+      "threshold": "0.52MPa（告警）/0.50MPa（闭锁）",
+      "status": "未处理",
+      "confirmedBy": null,
+      "notes": "SF6压力缓慢下降，需尽快安排补气，下降到闭锁值将导致断路器拒动"
+    },
+    {
+      "alarmId": "ALM202602280010",
+      "alarmTime": "2026-02-28T22:10:00",
+      "alarmType": "断路器操作次数预警",
+      "alarmLevel": "提示",
+      "currentValue": "1200次",
+      "threshold": "1500次（建议小修）",
+      "status": "已确认",
+      "confirmedBy": "王强",
+      "notes": "操作次数接近维护门槛，建议列入年度检修计划"
+    }
+  ],
+  "DL-35KV-001": [
+    {
+      "alarmId": "ALM202605080028",
+      "alarmTime": "2026-05-08T13:55:00",
+      "alarmType": "真空灭弧室真空度下降",
+      "alarmLevel": "重要",
+      "currentValue": "1.2×10⁻²Pa",
+      "threshold": "1.33×10⁻³Pa",
+      "status": "已确认",
+      "confirmedBy": "张建国",
+      "notes": "真空度已超过允许值，建议下次停电时更换灭弧室"
+    }
+  ],
+  "XL-110KV-001": [
+    {
+      "alarmId": "ALM202605190006",
+      "alarmTime": "2026-05-19T06:30:00",
+      "alarmType": "线路接地故障（瞬时性）",
+      "alarmLevel": "紧急",
+      "currentValue": "A相电压跌至0.2pu",
+      "threshold": "0.8pu",
+      "status": "已处理",
+      "confirmedBy": "王强",
+      "notes": "重合闸成功，故障持续时间约80ms，巡线未发现明显故障点"
+    },
+    {
+      "alarmId": "ALM202603080044",
+      "alarmTime": "2026-03-08T17:20:00",
+      "alarmType": "线路覆冰预警",
+      "alarmLevel": "重要",
+      "currentValue": "覆冰厚度8mm",
+      "threshold": "5mm",
+      "status": "已处理",
+      "confirmedBy": "李伟",
+      "notes": "寒潮天气导致线路覆冰，已启动融冰措施"
+    },
+    {
+      "alarmId": "ALM202601200031",
+      "alarmTime": "2026-01-20T14:00:00",
+      "alarmType": "线路通道树木隐患",
+      "alarmLevel": "一般",
+      "currentValue": "树线距离2.1m",
+      "threshold": "3.5m（110kV安全距离）",
+      "status": "已处理",
+      "confirmedBy": "张建国",
+      "notes": "通道内速生杨树超高，已安排清障"
+    }
+  ],
+  "XL-35KV-001": [
+    {
+      "alarmId": "ALM202605100011",
+      "alarmTime": "2026-05-10T15:40:00",
+      "alarmType": "线路通道外力破坏预警",
+      "alarmLevel": "重要",
+      "currentValue": "施工机械距线路5m",
+      "threshold": "10m（35kV安全距离）",
+      "status": "已处理",
+      "confirmedBy": "王强",
+      "notes": "线路通道下方有吊车施工，已现场制止并下达隐患通知"
+    }
+  ],
+  "MX-10KV-001": [
+    {
+      "alarmId": "ALM202604050009",
+      "alarmTime": "2026-04-05T10:00:00",
+      "alarmType": "母线电压不平衡",
+      "alarmLevel": "一般",
+      "currentValue": "Uab=10.2kV, Ubc=9.8kV",
+      "threshold": "不平衡度<2%",
+      "status": "已处理",
+      "confirmedBy": "李伟",
+      "notes": "一相PT熔断器老化导致测量偏差，已更换"
+    }
+  ],
+  "CB-10KV-001": [
+    {
+      "alarmId": "ALM202605140020",
+      "alarmTime": "2026-05-14T19:30:00",
+      "alarmType": "电容器组三相电流不平衡",
+      "alarmLevel": "重要",
+      "currentValue": "Ia=165A, Ib=172A, Ic=148A",
+      "threshold": "不平衡度>5%",
+      "status": "未处理",
+      "confirmedBy": null,
+      "notes": "C相电流偏低14%，可能C相有电容器单元损坏"
+    },
+    {
+      "alarmId": "ALM202603300015",
+      "alarmTime": "2026-03-30T11:20:00",
+      "alarmType": "电容器谐波电流超标",
+      "alarmLevel": "一般",
+      "currentValue": "5次谐波电流48A",
+      "threshold": "40A",
+      "status": "已处理",
+      "confirmedBy": "张建国",
+      "notes": "区域内新增光伏逆变器导致谐波含量增加"
+    }
+  ]
+}

@@ -5,6 +5,8 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.example.agent.skill.model.Skill;
 import org.example.agent.skill.service.SkillSelector;
 import org.example.graph.GraphStateKeys;
+import org.example.hook.HookContext;
+import org.example.hook.HookEngine;
 import org.example.knowledge.KnowledgeOrganizationService;
 import org.example.memory.MemoryService;
 import org.slf4j.Logger;
@@ -19,12 +21,15 @@ public class ContextLoadNode implements NodeAction {
     private final MemoryService memoryService;
     private final SkillSelector skillSelector;
     private final KnowledgeOrganizationService knowledgeOrganizationService;
+    private final HookEngine hookEngine;
 
     public ContextLoadNode(MemoryService memoryService, SkillSelector skillSelector,
-                           KnowledgeOrganizationService knowledgeOrganizationService) {
+                           KnowledgeOrganizationService knowledgeOrganizationService,
+                           HookEngine hookEngine) {
         this.memoryService = memoryService;
         this.skillSelector = skillSelector;
         this.knowledgeOrganizationService = knowledgeOrganizationService;
+        this.hookEngine = hookEngine;
     }
 
     @Override
@@ -41,7 +46,22 @@ public class ContextLoadNode implements NodeAction {
                 .or(() -> state.value(GraphStateKeys.INPUT))
                 .map(Object::toString)
                 .orElse("");
-        String workflowContext = knowledgeOrganizationService.buildWorkflowContext(input);
+
+        // PRE_RAG hook: query expansion
+        HookContext preRagCtx = HookContext.builder()
+                .sessionId(sessionId).taskId(taskId).agentName("context_load")
+                .input(input).params(Map.of("intent", intent)).build();
+        hookEngine.executeHooks("PRE_RAG", preRagCtx);
+
+        Object expandedQuery = preRagCtx.getParam("expanded_query");
+        String ragInput = expandedQuery != null ? expandedQuery.toString() : input;
+        String workflowContext = knowledgeOrganizationService.buildWorkflowContext(ragInput);
+
+        // POST_RAG hook: quality filter
+        HookContext postRagCtx = HookContext.builder()
+                .sessionId(sessionId).taskId(taskId).agentName("context_load")
+                .output(workflowContext).params(Map.of("intent", intent)).build();
+        hookEngine.executeHooks("POST_RAG", postRagCtx);
 
         String skillContext = "";
         if (!intent.isEmpty()) {

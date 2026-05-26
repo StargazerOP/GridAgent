@@ -44,9 +44,9 @@ public class LlmFactory {
 
     // ───────────────────── 预配置 ChatModel ─────────────────────
 
-    /** 意图路由 — 低温度确保分类确定性 */
+    /** 意图路由 — 极低温度确保分类确定性 */
     public ChatModel routerChatModel() {
-        return buildChatModel(0.1, 200, 0.5);
+        return buildChatModel(0.05, 500, 0.5);
     }
 
     /** 工具调用 Agent — 低温度 */
@@ -59,14 +59,14 @@ public class LlmFactory {
         return buildChatModel(0.3, 3000, 0.8);
     }
 
-    /** 综合诊断 Agent — 中等温度 */
+    /** 综合诊断 Agent — 中温，需要一定创造性诊断 */
     public ChatModel diagnosisChatModel() {
-        return buildChatModel(0.3, 3000, 0.8);
+        return buildChatModel(0.4, 4000, 0.8);
     }
 
-    /** 风险评估 Agent — 中等温度 */
+    /** 风险评估 Agent — 低温，安全评估不能出错 */
     public ChatModel riskChatModel() {
-        return buildChatModel(0.3, 3000, 0.8);
+        return buildChatModel(0.2, 3000, 0.8);
     }
 
     /** 通用对话 — 较高温度 */

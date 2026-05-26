@@ -17,13 +17,6 @@ import org.example.checkpoint.CheckpointService;
 import org.example.config.LlmFactory;
 import org.example.graph.dispatcher.EvidenceValidationDispatcher;
 import org.example.graph.dispatcher.IntentDispatcher;
-import org.example.graph.handler.AnalysisStepHandler;
-import org.example.graph.handler.ApprovalStepHandler;
-import org.example.graph.handler.ChatStepHandler;
-import org.example.graph.handler.DiagnosisStepHandler;
-import org.example.graph.handler.RagStepHandler;
-import org.example.graph.handler.StepHandlerRegistry;
-import org.example.graph.handler.ToolStepHandler;
 import org.example.graph.node.ContextLoadNode;
 import org.example.graph.node.FinalResponseNode;
 import org.example.graph.node.MemorySaveNode;
@@ -33,7 +26,6 @@ import org.example.graph.node.RouterNode;
 import org.example.graph.node.SafetyReviewNode;
 import org.example.graph.subgraph.chat.ChatAgentNode;
 import org.example.graph.subgraph.diagnosis.ActionRecommendNode;
-import org.example.graph.subgraph.diagnosis.AlarmRagRetrieveNode;
 import org.example.graph.subgraph.diagnosis.DiagnosisNode;
 import org.example.graph.subgraph.diagnosis.EntityExtractNode;
 import org.example.graph.subgraph.diagnosis.EvidenceValidationNode;
@@ -69,8 +61,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import java.util.Map;
 
@@ -91,25 +85,6 @@ public class PowerOpsGraphConfig {
     }
 
     @Bean
-    public StepHandlerRegistry stepHandlerRegistry(
-            ToolAgent toolAgent,
-            AnalysisAgent analysisAgent,
-            DiagnosisAgent diagnosisAgent,
-            RagService ragService,
-            ApprovalService approvalService,
-            ToolCallbackProvider tools
-    ) {
-        StepHandlerRegistry registry = new StepHandlerRegistry();
-        registry.register(new ToolStepHandler(toolAgent));
-        registry.register(new AnalysisStepHandler(analysisAgent));
-        registry.register(new DiagnosisStepHandler(diagnosisAgent));
-        registry.register(new RagStepHandler(ragService));
-        registry.register(new ApprovalStepHandler(approvalService));
-        registry.register(new ChatStepHandler(llmFactory, tools));
-        return registry;
-    }
-
-    @Bean
     public StateGraph powerOpsGraph(
             RouterAgent routerAgent,
             SkillSelector skillSelector,
@@ -126,7 +101,6 @@ public class PowerOpsGraphConfig {
             RerankService rerankService,
             KnowledgeGraphService knowledgeGraphService,
             RbacService rbacService,
-            StepHandlerRegistry handlerRegistry,
             InputValidator inputValidator,
             PlanValidator planValidator,
             ToolResultValidator toolResultValidator,
@@ -145,7 +119,7 @@ public class PowerOpsGraphConfig {
                 .addNode("pre_check", node_async(observed("pre_check",
                         new PreCheckNode(inputValidator), observabilityService, checkpointService)))
                 .addNode("context_load", node_async(observed("context_load",
-                        new ContextLoadNode(memoryService, skillSelector, knowledgeOrganizationService), observabilityService, checkpointService)))
+                        new ContextLoadNode(memoryService, skillSelector, knowledgeOrganizationService, hookEngine), observabilityService, checkpointService)))
                 .addNode("router", node_async(observed("router",
                         new RouterNode(routerAgent), observabilityService, checkpointService)))
 
@@ -167,11 +141,11 @@ public class PowerOpsGraphConfig {
                 .addNode("entity_extract", node_async(observed("entity_extract",
                         new EntityExtractNode(chatClient), observabilityService, checkpointService)))
                 .addNode("alarm_rag_retrieve", node_async(observed("alarm_rag_retrieve",
-                        new AlarmRagRetrieveNode(hybridSearchService), observabilityService, checkpointService)))
+                        new RagRetrieveNode(hybridSearchService), observabilityService, checkpointService)))
                 .addNode("planner", node_async(observed("planner",
                         new PlannerNode(chatClient, planValidator, tools), observabilityService, checkpointService)))
                 .addNode("executor", node_async(observed("executor",
-                        new ExecutorNode(tools, retryRegistry, toolResultValidator, planValidator, observabilityService),
+                        new ExecutorNode(tools, retryRegistry, toolResultValidator, planValidator, observabilityService, hookEngine),
                         observabilityService, checkpointService)))
                 .addNode("evidence_validation", node_async(observed("evidence_validation",
                         new EvidenceValidationNode(evidenceQualityEvaluator), observabilityService, checkpointService)))
@@ -252,8 +226,105 @@ public class PowerOpsGraphConfig {
     }
 
     @Bean
-    public CompiledGraph compiledPowerOpsGraph(StateGraph powerOpsGraph) throws GraphStateException {
+    public StateGraph alarmDiagnosisGraph(
+            SkillSelector skillSelector,
+            KnowledgeOrganizationService knowledgeOrganizationService,
+            MemoryService memoryService,
+            HookEngine hookEngine,
+            DiagnosisAgent diagnosisAgent,
+            RiskReviewAgent riskReviewAgent,
+            ToolCallbackProvider tools,
+            ChatClient.Builder chatClientBuilder,
+            HybridSearchService hybridSearchService,
+            InputValidator inputValidator,
+            PlanValidator planValidator,
+            ToolResultValidator toolResultValidator,
+            EvidenceQualityEvaluator evidenceQualityEvaluator,
+            DiagnosisValidator diagnosisValidator,
+            RetryRegistry retryRegistry,
+            ObservabilityService observabilityService,
+            CheckpointService checkpointService
+    ) throws GraphStateException {
+
+        KeyStrategyFactory stateFactory = new PowerOpsStateFactory();
+        ChatClient chatClient = chatClientBuilder.build();
+
+        StateGraph graph = new StateGraph("alarm_diagnosis_graph", stateFactory)
+                .addNode("pre_check", node_async(observed("pre_check",
+                        new PreCheckNode(inputValidator), observabilityService, checkpointService)))
+                .addNode("context_load", node_async(observed("context_load",
+                        new ContextLoadNode(memoryService, skillSelector, knowledgeOrganizationService, hookEngine), observabilityService, checkpointService)))
+                .addNode("entity_extract", node_async(observed("entity_extract",
+                        new EntityExtractNode(chatClient), observabilityService, checkpointService)))
+                .addNode("alarm_rag_retrieve", node_async(observed("alarm_rag_retrieve",
+                        new RagRetrieveNode(hybridSearchService), observabilityService, checkpointService)))
+                .addNode("planner", node_async(observed("planner",
+                        new PlannerNode(chatClient, planValidator, tools), observabilityService, checkpointService)))
+                .addNode("executor", node_async(observed("executor",
+                        new ExecutorNode(tools, retryRegistry, toolResultValidator, planValidator, observabilityService, hookEngine),
+                        observabilityService, checkpointService)))
+                .addNode("evidence_validation", node_async(observed("evidence_validation",
+                        new EvidenceValidationNode(evidenceQualityEvaluator), observabilityService, checkpointService)))
+                .addNode("diagnosis", node_async(observed("diagnosis",
+                        new DiagnosisNode(diagnosisAgent, diagnosisValidator),
+                        observabilityService, checkpointService)))
+                .addNode("risk_assessment", node_async(observed("risk_assessment",
+                        new RiskAssessmentNode(riskReviewAgent), observabilityService, checkpointService)))
+                .addNode("replanner", node_async(observed("replanner",
+                        new ReplannerNode(chatClient), observabilityService, checkpointService)))
+                .addNode("action_recommend", node_async(observed("action_recommend",
+                        new ActionRecommendNode(chatClient), observabilityService, checkpointService)))
+                .addNode("safety_review", node_async(observed("safety_review",
+                        new SafetyReviewNode(hookEngine), observabilityService, checkpointService)))
+                .addNode("final_response", node_async(observed("final_response",
+                        new FinalResponseNode(), observabilityService, checkpointService)))
+                .addNode("memory_save", node_async(observed("memory_save",
+                        new MemorySaveNode(memoryService), observabilityService, checkpointService)))
+
+                .addEdge(START, "pre_check")
+                .addEdge("pre_check", "context_load")
+                .addEdge("context_load", "entity_extract")
+                .addEdge("entity_extract", "alarm_rag_retrieve")
+                .addEdge("alarm_rag_retrieve", "planner")
+                .addEdge("planner", "executor")
+                .addEdge("executor", "evidence_validation")
+                .addConditionalEdges("evidence_validation", edge_async(new EvidenceValidationDispatcher()),
+                        Map.of(
+                                "diagnosis", "diagnosis",
+                                "replanner", "replanner",
+                                "action_recommend", "action_recommend"
+                        ))
+                .addEdge("diagnosis", "risk_assessment")
+                .addEdge("risk_assessment", "replanner")
+                .addConditionalEdges("replanner", edge_async(new ReplannerDispatcher()),
+                        Map.of(
+                                "executor", "executor",
+                                "action_recommend", "action_recommend"
+                        ))
+                .addEdge("action_recommend", "safety_review")
+                .addEdge("safety_review", "final_response")
+                .addEdge("final_response", "memory_save")
+                .addEdge("memory_save", END);
+
+        try {
+            GraphRepresentation representation = graph.getGraph(GraphRepresentation.Type.PLANTUML, "alarm_diagnosis_graph");
+            logger.info("\n=== Alarm Diagnosis Graph UML ===\n{}\n===", representation.content());
+        } catch (Exception e) {
+            logger.warn("Alarm graph visualization generation failed: {}", e.getMessage());
+        }
+
+        return graph;
+    }
+
+    @Bean
+    @Primary
+    public CompiledGraph compiledPowerOpsGraph(@Qualifier("powerOpsGraph") StateGraph powerOpsGraph) throws GraphStateException {
         return powerOpsGraph.compile();
+    }
+
+    @Bean
+    public CompiledGraph compiledAlarmDiagnosisGraph(@Qualifier("alarmDiagnosisGraph") StateGraph alarmDiagnosisGraph) throws GraphStateException {
+        return alarmDiagnosisGraph.compile();
     }
 
     private NodeAction observed(String nodeName, NodeAction nodeAction,

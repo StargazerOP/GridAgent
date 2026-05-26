@@ -1,5 +1,31 @@
 [
   {
+    "template_id": "diagnosis_transformer_oil_temp_high",
+    "scene": "equipment_diagnosis",
+    "name": "主变油温异常诊断模板",
+    "description": "适用于主变上层油温、绕组温度超过阈值，伴随冷却器异常、负荷偏高、告警缺失或历史缺陷复现的诊断任务。",
+    "keywords": ["主变", "变压器", "油温", "上层油温", "绕组温度", "冷却器", "风机", "油泵", "负荷率", "告警缺失", "TR-110KV-001"],
+    "slots": {
+      "device_id": "主变设备编号",
+      "oil_temperature": "当前油温",
+      "threshold": "告警阈值",
+      "cooler_status": "冷却器状态",
+      "load_rate": "当前负荷率"
+    },
+    "default_entities": ["TR-110KV-001"],
+    "workflow": [
+      {"step": "识别主变编号、油温数值和越限阈值", "tool": "slot_filler", "params": {"slots": ["device_id", "oil_temperature", "threshold"]}},
+      {"step": "查询主变设备台账和温度阈值", "tool": "getDeviceProfile", "params": {"deviceId": "{device_id}"}},
+      {"step": "查询主变实时油温、负荷和冷却器状态", "tool": "getDeviceStatus", "params": {"deviceId": "{device_id}", "metrics": "oilTemperature,loadRate,coolerStatus", "timeRange": "1h"}},
+      {"step": "查询油温和冷却器相关历史告警", "tool": "getAlarmHistory", "params": {"deviceId": "{device_id}", "alarmType": "油温异常 冷却器异常", "timeRange": "30d", "limit": 10}},
+      {"step": "查询主变近期运行日志和冷却器动作记录", "tool": "getDeviceLogs", "params": {"deviceId": "{device_id}", "logType": "运行日志 冷却器动作", "timeRange": "24h", "limit": 10}},
+      {"step": "查询冷却器、风机和温控回路缺陷工单", "tool": "getDefectTickets", "params": {"deviceId": "{device_id}", "defectType": "冷却器 风机 温控", "timeRange": "180d", "limit": 10}},
+      {"step": "检索变压器油温异常处置规程", "tool": "regulation_retriever", "params": {"query": "主变 油温 异常 冷却器 负荷 降负荷 安全规程"}},
+      {"step": "分析主变拓扑影响和运行风险", "tool": "topology_analyzer", "params": {"center_entity": "{device_id}", "query": "主变油温异常 影响范围"}},
+      {"step": "形成油温异常诊断结论和处置建议", "tool": "llm", "params": {"output": "诊断结论"}}
+    ]
+  },
+  {
     "template_id": "fault_substation_blackout",
     "scene": "fault_plan_generation",
     "name": "变电站全停故障处置模板",

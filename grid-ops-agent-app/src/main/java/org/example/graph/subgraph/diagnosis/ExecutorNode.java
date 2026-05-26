@@ -13,6 +13,8 @@ import org.example.graph.model.StepResult;
 import org.example.graph.validation.ToolResultValidator;
 import org.example.graph.validation.ValidationResult;
 import org.example.graph.validation.PlanValidator;
+import org.example.hook.HookContext;
+import org.example.hook.HookEngine;
 import org.example.observability.ObservabilityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,16 +40,19 @@ public class ExecutorNode implements NodeAction {
     private final ToolResultValidator toolResultValidator;
     private final PlanValidator planValidator;
     private final ObservabilityService observabilityService;
+    private final HookEngine hookEngine;
 
     public ExecutorNode(ToolCallbackProvider tools, RetryRegistry retryRegistry,
                         ToolResultValidator toolResultValidator,
                         PlanValidator planValidator,
-                        ObservabilityService observabilityService) {
+                        ObservabilityService observabilityService,
+                        HookEngine hookEngine) {
         this.tools = tools;
         this.retryRegistry = retryRegistry;
         this.toolResultValidator = toolResultValidator;
         this.planValidator = planValidator;
         this.observabilityService = observabilityService;
+        this.hookEngine = hookEngine;
     }
 
     @Override
@@ -126,6 +131,21 @@ public class ExecutorNode implements NodeAction {
                 .retryCount(0)
                 .evidenceType(toolResultValidator.evidenceType(toolName));
 
+        String paramError = validateRequiredParams(toolName, step.getParams());
+        if (paramError != null) {
+            logTool(traceId, taskId, sessionId, toolName, toolInput, paramError, "FAILED", start);
+            return result.status("FAILED")
+                    .success(false)
+                    .result(paramError)
+                    .error(paramError)
+                    .errorType("PARAMETER_MISMATCH")
+                    .recoverable(true)
+                    .nextSuggestion("REPLAN")
+                    .matchExpected(false)
+                    .durationMs(System.currentTimeMillis() - start)
+                    .build();
+        }
+
         if (callback == null) {
             String message = "Tool not found: " + toolName;
             logTool(traceId, taskId, sessionId, toolName, toolInput, message, "FAILED", start);
@@ -133,7 +153,7 @@ public class ExecutorNode implements NodeAction {
                     .success(false)
                     .result(message)
                     .error(message)
-                    .errorType("TOOL_NOT_FOUND")
+                    .errorType("TOOL_NOT_REGISTERED")
                     .recoverable(true)
                     .nextSuggestion("REPLAN")
                     .matchExpected(false)
@@ -142,9 +162,22 @@ public class ExecutorNode implements NodeAction {
         }
 
         try {
+            // PRE_TOOL_USE hook
+            HookContext preCtx = HookContext.builder()
+                    .sessionId(sessionId).taskId(taskId).agentName(toolName)
+                    .params(step.getParams()).input(toolInput).build();
+            hookEngine.executeHooks("PRE_TOOL_USE", preCtx);
+
             Retry retry = retryRegistry.retry(toolName.startsWith("get") ? "mcpTool" : "llmCall");
             Callable<String> decorated = Retry.decorateCallable(retry, () -> callback.call(toolInput));
             String response = decorated.call();
+
+            // POST_TOOL_USE hook
+            HookContext postCtx = HookContext.builder()
+                    .sessionId(sessionId).taskId(taskId).agentName(toolName)
+                    .output(response).params(step.getParams()).build();
+            hookEngine.executeHooks("POST_TOOL_USE", postCtx);
+
             ValidationResult validation = toolResultValidator.validate(toolName, response);
             long duration = System.currentTimeMillis() - start;
             if (!validation.isValid()) {
@@ -178,7 +211,7 @@ public class ExecutorNode implements NodeAction {
                     .result("Tool execution failed: " + message)
                     .error(message)
                     .errorType(errorType)
-                    .recoverable(!"TOOL_UNAUTHORIZED".equals(errorType))
+                    .recoverable(!"INTERFACE_UNAUTHORIZED".equals(errorType))
                     .nextSuggestion("REPLAN")
                     .matchExpected(false)
                     .durationMs(duration)
@@ -230,15 +263,36 @@ public class ExecutorNode implements NodeAction {
     private String classify(Exception e) {
         String message = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
         if (message.contains("timeout") || message.contains("timed out")) {
-            return "TOOL_TIMEOUT";
+            return "INTERFACE_TIMEOUT";
         }
         if (message.contains("connection") || message.contains("connect")) {
-            return "TOOL_CONNECTION_ERROR";
+            return "INTERFACE_EXCEPTION";
         }
         if (message.contains("unauthorized") || message.contains("forbidden")) {
-            return "TOOL_UNAUTHORIZED";
+            return "INTERFACE_UNAUTHORIZED";
         }
-        return "TOOL_EXECUTION_ERROR";
+        return "INTERFACE_EXCEPTION";
+    }
+
+    private String validateRequiredParams(String toolName, Map<String, Object> params) {
+        if (toolName == null || params == null) {
+            return null;
+        }
+        if (toolName.startsWith("getDevice") || "getAlarmHistory".equals(toolName) || "getDefectTickets".equals(toolName)) {
+            String deviceId = stringParam(params, "deviceId");
+            if (deviceId.isBlank() || "UNKNOWN".equalsIgnoreCase(deviceId) || "未知".equals(deviceId)) {
+                return "参数不匹配: " + toolName + " 需要有效 deviceId";
+            }
+        }
+        return null;
+    }
+
+    private String stringParam(Map<String, Object> params, String key) {
+        Object value = params.get(key);
+        if (value == null) {
+            value = params.get(key.toLowerCase());
+        }
+        return value == null ? "" : String.valueOf(value).trim();
     }
 
     private String summarizeResult(String result) {
