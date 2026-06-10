@@ -30,6 +30,7 @@ public final class GraphStateKeys {
     public static final String TOOL_RESULT = "tool_result";
     public static final String ADDITIONAL_STEPS = "additional_steps";
     public static final String WORKFLOW_CONTEXT = "workflow_context";
+    public static final String WORKFLOW_ASSET_CONTEXT = "workflow_asset_context";
 
     private GraphStateKeys() {
     }

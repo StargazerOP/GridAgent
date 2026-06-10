@@ -352,7 +352,7 @@ public class KnowledgeOrganizationService {
         precheck.put("graph_name", graphName);
         precheck.put("summary", summary);
         precheck.put("checks", checks);
-        precheck.put("handoff", "协同诊断会话将按该 Graph 路由重新装载上下文并实际执行工具。");
+        precheck.put("handoff", "运行诊断控制台将按该 Graph 路由重新装载上下文并实际执行工具。");
         return precheck;
     }
 

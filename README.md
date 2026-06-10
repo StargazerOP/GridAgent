@@ -8,8 +8,9 @@ GridOpsAgent 是一个面向电网调度运维场景的多智能体诊断原型�
 
 ```text
 Spring Boot 主系统
++ Workflow / Skill / Agent 诊断资产层
 + 多 Agent Graph 诊断流程
-+ nari_demo 知识组织资源迁移
++ 知识组织资源迁移
 + 本地 BGE-M3 embedding
 + MySQL / Milvus / Redis 基础设施
 + 可展示的学术进展汇报 HTML PPT
@@ -18,10 +19,15 @@ Spring Boot 主系统
 已完成的主要能力：
 
 - 任务编排台：输入自然语言调度/运维任务，匹配流程模板、候选步骤、推荐工具和关联知识节点。
+- 流程资产库：将处置经验沉淀为可复制、可编辑、可持久化的 Workflow，本地保存到 `data/workflows/user-workflows.json`。
+- 技能中心：将设备状态查询、RAG 检索、图谱查询、拓扑分析、风险校核等能力作为 Skill 展示，并绑定到 Workflow 步骤。
 - 运行诊断控制台：执行 Router、WorkflowContext、Entity、Planner、Tool、Knowledge、Evidence、Safety、Report 等多 Agent / 多节点流程。
+- Workflow/Skill 执行闭环：Workflow 步骤同时记录业务 Skill 与底层可执行工具，运行诊断时由 Planner 转换为 `PlanStep`，Executor 记录 Skill 名称、工具结果、耗时和证据摘要。
+- 主变油温规则校核：新增 `assessTransformerOilTempRisk`，基于演示状态量、油温阈值、负荷率、冷却器状态、历史告警和缺陷工单输出结构化风险校核结果。
 - 知识拓扑：展示流程模板、工具能力和知识实体之间的关系。
 - 知识库运维：支持文档上传、切片、向量化、检索测试、RAG 健康状态和一键自检。
 - 主变油温异常示例：基于 `TR-110KV-001 油温 86℃ 超过 80℃阈值` 展示诊断流程、运行轨迹和诊断报告。
+- 扩展示例：`500kV 母线检修方式下发生 N-1 故障，生成风险校核流程` 可展示 Workflow 匹配、图谱查询、故障场景生成和风险校核 Skill 调用。
 - 汇报 PPT：提供当前阶段工作进展汇报 HTML PPT，位于 `outputs/GridOpsAgent_v9_academic_progress_report/`。
 
 ## 技术栈
@@ -30,6 +36,7 @@ Spring Boot 主系统
 | --- | --- |
 | 前端展示 | HTML / CSS / JavaScript、SSE 流式事件展示、知识拓扑可视化 |
 | 后端服务 | Java 17、Spring Boot 3.2、Spring AI、Spring AI Alibaba Graph |
+| Workflow/Skill 资产 | 资源种子 Workflow、用户可编辑 Workflow、本地 JSON 持久化、Skill 能力视图 |
 | Agent 编排 | Router / WorkflowContext / Entity / Planner / Tool / Knowledge / Evidence / Safety / Report |
 | 模型调用 | DeepSeek OpenAI-compatible API，用于任务理解、规划和报告生成 |
 | Embedding | 本地 BGE-M3 OpenAI-compatible embedding 服务，默认端口 `9910` |
@@ -48,6 +55,7 @@ GridOpsAgent-main/
 │  │  ├─ graph/                                # Graph 编排与节点
 │  │  ├─ agent/                                # Agent 逻辑
 │  │  ├─ knowledge/                            # 知识组织服务
+│  │  ├─ workflow/                             # Workflow/Skill 资产模型与服务
 │  │  ├─ service/                              # RAG、MockData、流式服务
 │  │  └─ controller/                           # Web/API 控制器
 │  ├─ src/main/resources/knowledge-organization/
@@ -64,6 +72,7 @@ GridOpsAgent-main/
 │  ├─ stop-gridops.ps1                         # 停止服务
 │  └─ bge_m3_embedding_server.py               # 本地 BGE-M3 embedding 服务
 ├─ docs/                                       # 系统文档和演示流程
+├─ data/workflows/user-workflows.json          # 用户新增/复制的 Workflow 资产，首次保存后生成
 ├─ outputs/GridOpsAgent_v9_academic_progress_report/
 │  ├─ index.html                               # 当前汇报 PPT
 │  ├─ ppt.zip                                  # PPT 打包文件
@@ -110,7 +119,7 @@ docker start redis-gridops
 $env:DEEPSEEK_API_KEY="你的 DeepSeek API Key"
 ```
 
-只查看页面、PPT、部分 mock 工具能力时可以不设置，但多 Agent 对话和诊断报告生成会受影响。
+只查看页面、PPT、部分 mock 工具能力时可以不设置，但运行诊断和报告生成会受影响。
 
 ### 3. 启动本地服务
 
@@ -226,7 +235,13 @@ Ctrl + C
 
 ## 知识组织能力
 
-当前版本迁入了 nari_demo 的知识组织思路，但不依赖 Python demo 运行时。
+当前版本迁入了知识组织资源，并进一步扩展为 Workflow / Skill / Agent 三层资产模型：
+
+- `Workflow`：描述可治理的诊断或处置流程，包含适用场景、触发关键词、步骤顺序、证据要求和人工确认要求。
+- `Skill`：描述可复用的专业能力单元，一个 Workflow 步骤可以绑定一个或多个 Skill，Skill 再调用工具、RAG、图谱或推演算子。
+- `Agent Graph`：负责运行时动态执行 Workflow，完成实体抽取、计划生成、工具调用、证据复核、安全复核和报告生成。
+
+系统不依赖原 Python demo 运行时。
 
 主要资源位于：
 
@@ -244,16 +259,45 @@ grid-ops-agent-app/src/main/resources/knowledge-organization/
 | `POST /api/knowledge-org/match` | 自然语言任务匹配模板和候选节点 |
 | `POST /api/knowledge-org/instant-plan` | 生成 GridOps 可执行计划草案 |
 
-Graph 诊断流程中，`ContextLoadNode` 会加载匹配到的 workflow context，`PlannerNode` 会参考模板步骤生成当前系统可执行的 `PlanStep`。
+新增 Workflow/Skill 资产接口：
+
+| API | 作用 |
+| --- | --- |
+| `GET /api/workflow-assets/overview` | Workflow、Skill、推演算子和治理能力概览 |
+| `GET /api/workflow-assets/workflows` | 流程资产列表，包含资源种子和用户编辑流程 |
+| `GET /api/workflow-assets/workflows/{id}` | 流程详情 |
+| `POST /api/workflow-assets/workflows` | 新建可编辑 Workflow |
+| `PUT /api/workflow-assets/workflows/{id}` | 更新可编辑 Workflow |
+| `DELETE /api/workflow-assets/workflows/{id}` | 删除用户编辑 Workflow |
+| `POST /api/workflow-assets/match` | 自然语言任务匹配 Workflow 并返回推荐 Skill |
+| `GET /api/workflow-assets/skills` | Skill 能力中心 |
+| `GET /api/workflow-assets/workflows/{id}/blueprint` | Workflow 到 Agent Graph 的执行蓝图 |
+
+Graph 诊断流程中，`ContextLoadNode` 会加载 `WORKFLOW_SKILL_AGENT` 上下文，写入 `workflow_context` 和 `workflow_asset_context`；`PlannerNode` 会优先将 Workflow 步骤转换为当前系统可执行的 `PlanStep`，再由 `PlanValidator` 校验工具名、别名和可执行性。
+
+主变油温异常主线已收口为：
+
+```text
+任务输入
+→ 命中“主变油温异常诊断模板”
+→ Workflow 步骤绑定设备台账查询、设备状态查询、历史告警检索、缺陷工单查询、规程检索、主变油温规则校核、诊断报告生成等 Skill
+→ Agent Graph 执行底层工具并记录 StepResult
+→ 最终报告引用状态量、告警/工单、规则校核、数据缺口和人工确认项
+```
+
+当前系统不接入真实电网控制接口，不直接执行设备操作；涉及降负荷、方式调整、转供或检修策略的内容只作为处置建议、工单草案或人工确认项输出。
 
 ## 当前前端页面
 
-主页面包含四个工作区：
+主页面包含七个工作区：
 
 | 页面 | 作用 |
 | --- | --- |
-| 任务编排台 | 任务输入、模板匹配、计划预览、关联图谱 |
-| 运行诊断控制台 | 多 Agent 对话、Graph 执行轨迹、诊断报告 |
+| 运行总览 | 查看 Workflow、Skill、推演算子、典型场景和系统运行入口 |
+| 流程资产 | 查看资源种子流程，复制为可编辑 Workflow，保存用户流程 |
+| 技能中心 | 查看 Skill、推荐工具、适用场景、绑定流程和推演边界 |
+| 任务编排台 | 任务输入、Workflow 匹配、Skill 推荐、计划预览、关联图谱 |
+| 运行诊断控制台 | Graph 执行轨迹、工具调用、RAG 检索、诊断报告 |
 | 知识拓扑 | 流程模板、工具能力、知识实体关系浏览 |
 | 知识库运维 | 文档上传、RAG 状态、自检、文档管理 |
 
@@ -267,12 +311,16 @@ Graph 诊断流程中，`ContextLoadNode` 会加载匹配到的 workflow context
 mvn -pl grid-ops-agent-app test
 ```
 
-当前提交验证结果：
+推荐重点验证：
 
 ```text
-Tests run: 9, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESS
+KnowledgeOrganizationServiceTest
+WorkflowAssetServiceTest
+ToolResultValidatorTest
+EvidenceQualityEvaluatorTest
 ```
+
+如果首次运行时 Maven 需要下载 Spring Boot parent 或依赖，请保持网络可用。
 
 ## 常见问题
 

@@ -20,6 +20,10 @@ public class StepResult {
     private String action;
     @JsonAlias({"tool_name", "tool"})
     private String toolName;
+    @JsonAlias("business_skill_id")
+    private String businessSkillId;
+    @JsonAlias("business_skill_name")
+    private String businessSkillName;
     private String status;
     private boolean success;
     private String result;

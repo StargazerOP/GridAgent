@@ -147,7 +147,7 @@ public class PlanValidator {
             toolName = mappedNariTool;
             warnings.add(step.getStepId() + " workflow tool mapped to " + toolName);
         }
-        if (TOOL_ALIASES.containsKey(toolName)) {
+        if (toolName != null && TOOL_ALIASES.containsKey(toolName)) {
             toolName = TOOL_ALIASES.get(toolName);
             warnings.add(step.getStepId() + " 工具名已映射为 " + toolName);
         }

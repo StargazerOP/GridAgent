@@ -25,6 +25,7 @@ public class PowerOpsStateFactory implements KeyStrategyFactory {
         strategies.put("memory_context", new ReplaceStrategy());
         strategies.put("skill_context", new ReplaceStrategy());
         strategies.put("workflow_context", new ReplaceStrategy());
+        strategies.put("workflow_asset_context", new ReplaceStrategy());
         strategies.put("history", new ReplaceStrategy());
         strategies.put("step_results", new ReplaceStrategy());
         strategies.put("execution_result", new ReplaceStrategy());

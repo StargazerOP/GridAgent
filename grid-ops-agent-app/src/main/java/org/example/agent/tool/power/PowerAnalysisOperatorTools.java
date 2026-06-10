@@ -175,6 +175,81 @@ public class PowerAnalysisOperatorTools {
         }
     }
 
+    @Tool(description = "Assess transformer oil-temperature risk using demonstration device status and rule thresholds. This is a rule-based engineering check, not a real SCADA control action.")
+    public String assessTransformerOilTempRisk(
+            @ToolParam(description = "Transformer device id, for example TR-110KV-001.") String deviceId,
+            @ToolParam(description = "Observed oil temperature, for example 86C or 86℃.") String oilTemperature,
+            @ToolParam(description = "Alarm threshold, for example 80C or 80℃.") String threshold) {
+        try {
+            String resolvedDeviceId = inferDeviceId(deviceId);
+            if (resolvedDeviceId == null || resolvedDeviceId.isBlank()) {
+                resolvedDeviceId = "TR-110KV-001";
+            }
+            Map<String, Object> status = mockDataLoader.getDeviceStatusMock(resolvedDeviceId);
+            Map<String, Object> profile = mockDataLoader.getDeviceProfileOrDefault(resolvedDeviceId);
+            List<Map<String, Object>> alarms = mockDataLoader.getAlarmHistory(resolvedDeviceId);
+            List<Map<String, Object>> tickets = mockDataLoader.getDefectTickets(resolvedDeviceId);
+
+            double oilTemp = parseTemperature(oilTemperature, parseTemperature(status.get("oilTemperature"), 0));
+            double thresholdValue = parseTemperature(threshold, parseTemperature(status.get("oilTemperatureThreshold"), 80));
+            int loadRate = parsePercent(status.get("loadRate"), 0);
+            double margin = Math.round((oilTemp - thresholdValue) * 10.0) / 10.0;
+            int riskScore = 10;
+            if (margin >= 0) riskScore += 35;
+            if (margin >= 5) riskScore += 12;
+            if (loadRate >= 90) riskScore += 18;
+            if (scenarioContains(String.valueOf(status.get("coolerStatus")), "异常")) riskScore += 22;
+            riskScore += Math.min(10, countOpen(alarms, "status") * 4);
+            riskScore += Math.min(12, countOpen(tickets, "status") * 6);
+            riskScore = Math.min(100, riskScore);
+
+            List<Map<String, Object>> findings = new ArrayList<>();
+            findings.add(Map.of(
+                    "item", "油温阈值校核",
+                    "level", margin >= 0 ? "HIGH" : "LOW",
+                    "message", "当前油温 " + oilTemp + "℃，阈值 " + thresholdValue + "℃，裕度 " + (margin >= 0 ? "+" : "") + margin + "℃。"));
+            findings.add(Map.of(
+                    "item", "负载率校核",
+                    "level", loadRate >= 90 ? "MEDIUM" : "LOW",
+                    "message", "当前负荷率约 " + loadRate + "%，高负荷会放大温升风险。"));
+            findings.add(Map.of(
+                    "item", "冷却系统校核",
+                    "level", scenarioContains(String.valueOf(status.get("coolerStatus")), "异常") ? "HIGH" : "LOW",
+                    "message", "冷却器状态：" + status.getOrDefault("coolerStatus", "未返回") + "；风机2：" + status.getOrDefault("coolerFan2", "未返回") + "。"));
+            findings.add(Map.of(
+                    "item", "历史缺陷与告警",
+                    "level", countOpen(tickets, "status") > 0 || countOpen(alarms, "status") > 0 ? "MEDIUM" : "LOW",
+                    "message", "未闭环告警 " + countOpen(alarms, "status") + " 条，待处理缺陷 " + countOpen(tickets, "status") + " 条。"));
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("mode", "SEMI_REAL_RULE_MECHANISM_CHECK");
+            result.put("operator", "assessTransformerOilTempRisk");
+            result.put("device_id", resolvedDeviceId);
+            result.put("risk_score", riskScore);
+            result.put("risk_level", riskLevel(riskScore));
+            result.put("calculation", Map.of(
+                    "oil_temperature_celsius", oilTemp,
+                    "threshold_celsius", thresholdValue,
+                    "temperature_margin_celsius", margin,
+                    "load_rate_percent", loadRate));
+            result.put("findings", findings);
+            result.put("human_confirmation_items", List.of(
+                    "现场确认冷却器风机、油泵和温控回路状态",
+                    "核对最近24小时油温、负荷和环境温度曲线",
+                    "涉及降负荷或方式调整时由值班负责人复核确认"));
+            result.put("evidence_snapshot", Map.of(
+                    "profile", compact(profile, "deviceName", "deviceType", "station", "ratedCapacity", "coolingType", "oilTemperatureAlarmThreshold"),
+                    "status", compact(status, "oilTemperature", "oilTemperatureThreshold", "loadRate", "environmentTemp", "coolerStatus", "coolerFan2", "alarmPresent"),
+                    "alarm_count", alarms.size(),
+                    "defect_ticket_count", tickets.size()));
+            result.put("data_quality", "mock_device_status_plus_rule_threshold");
+            result.put("control_boundary", "advisory_only_no_device_control");
+            return objectMapper.writeValueAsString(result);
+        } catch (Exception e) {
+            return error(e);
+        }
+    }
+
     @Tool(description = "Generate mock fault scenarios and handling focus points for planning and diagnosis.")
     public String generateFaultScenario(
             @ToolParam(description = "Fault entity, station, line, transformer or area.") String faultEntity,

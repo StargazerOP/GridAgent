@@ -93,7 +93,8 @@ public class ExecutorNode implements NodeAction {
 
             evidenceBuilder.append("证据：")
                     .append(nullToBlank(step.getAction()))
-                    .append("，工具 ").append(step.effectiveToolName())
+                    .append("，能力 ").append(step.getBusinessSkillName() == null || step.getBusinessSkillName().isBlank()
+                            ? step.effectiveToolName() : step.getBusinessSkillName())
                     .append(" 返回").append(statusText(stepResult.getStatus()))
                     .append("。").append(summarizeResult(stepResult.getResult()))
                     .append("\n");
@@ -128,6 +129,8 @@ public class ExecutorNode implements NodeAction {
                 .stepNo(step.effectiveStepNo())
                 .action(step.getAction())
                 .toolName(toolName)
+                .businessSkillId(step.getBusinessSkillId())
+                .businessSkillName(step.getBusinessSkillName())
                 .retryCount(0)
                 .evidenceType(toolResultValidator.evidenceType(toolName));
 
@@ -337,10 +340,31 @@ public class ExecutorNode implements NodeAction {
                         + "；发现项 " + findings + " 条；目标：" + textOr(root, "target", "未指定")
                         + "。结果为 MOCK_RISK_CHECK，不代表真实在线安全校核";
             }
+            if ("SEMI_REAL_RULE_RISK_CHECK".equals(mode)) {
+                int findings = root.path("findings").isArray() ? root.path("findings").size() : 0;
+                return "完成规则风险校核，风险等级：" + textOr(root, "risk_level", "UNKNOWN")
+                        + "；规则命中 " + findings + " 项；对象：" + textOr(root, "device_id", textOr(root, "target", "未指定"))
+                        + "。结果基于演示数据和工程阈值，需人工复核";
+            }
+            if ("SEMI_REAL_RULE_MECHANISM_CHECK".equals(mode)) {
+                JsonNode calculation = root.path("calculation");
+                int findings = root.path("findings").isArray() ? root.path("findings").size() : 0;
+                return "完成主变油温规则校核，风险等级：" + textOr(root, "risk_level", "UNKNOWN")
+                        + "；油温裕度 " + textOr(calculation, "temperature_margin_celsius", "未知") + "℃"
+                        + "；负荷率 " + textOr(calculation, "load_rate_percent", "未知") + "%"
+                        + "；规则命中 " + findings + " 项。结果为演示状态量与规则阈值推演";
+            }
             if ("MOCK_ESTIMATE".equals(mode)) {
                 return "完成模拟潮流估算；区域：" + textOr(root, "area", "未指定")
                         + "；场景：" + textOr(root, "scenario", "未指定")
                         + "。结果为 MOCK_ESTIMATE，不代表真实 EMS/DTS 计算";
+            }
+            if ("SEMI_REAL_RULE_ESTIMATE".equals(mode)) {
+                JsonNode metrics = root.path("metrics");
+                return "完成规则化潮流/负载估算；区域：" + textOr(root, "area", "未指定")
+                        + "；最大负载率 " + textOr(metrics, "max_line_loading_percent", "未知") + "%"
+                        + "；电压越限 " + textOr(metrics, "voltage_violation_count", "0") + " 项"
+                        + "。结果基于演示数据和规则估算，需 EMS/DTS 复核";
             }
             if (root.has("rules")) {
                 int total = root.path("rules").isArray() ? root.path("rules").size() : root.path("total").asInt(0);

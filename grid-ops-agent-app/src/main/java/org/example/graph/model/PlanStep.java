@@ -28,6 +28,10 @@ public class PlanStep {
     @JsonAlias({"tool_name", "tool"})
     private String toolName;
     private String tool;
+    @JsonAlias("business_skill_id")
+    private String businessSkillId;
+    @JsonAlias("business_skill_name")
+    private String businessSkillName;
     private Map<String, Object> params;
     private String purpose;
     private String expected;

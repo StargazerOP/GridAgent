@@ -174,7 +174,7 @@ button:disabled { opacity: .62; cursor: progress; }
   font-size: 13px;
 }
 .chip:hover, .chip.active { border-color: #8fcfbd; background: var(--green-soft); color: #17604d; }
-.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
 .card {
   border: 1px solid var(--line);
   background: var(--panel-soft);
@@ -240,10 +240,27 @@ button:disabled { opacity: .62; cursor: progress; }
   background-size: 28px 28px;
   padding: 22px;
 }
+.flow-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  min-width: max-content;
+}
+.flow-summary .badge {
+  border: 1px solid #d9e5f2;
+  border-radius: 999px;
+  background: rgba(255,255,255,.9);
+  color: #39536c;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 6px 10px;
+}
 .flow-row { display: flex; gap: 18px; min-width: max-content; align-items: stretch; }
 .flow-card {
-  width: 198px;
-  min-height: 118px;
+  width: 222px;
+  min-height: 166px;
   background: #fff;
   border: 1px solid #d9e5f2;
   border-top: 5px solid var(--blue);
@@ -253,8 +270,59 @@ button:disabled { opacity: .62; cursor: progress; }
   box-shadow: 0 8px 18px rgba(30,64,105,.08);
 }
 .flow-card.mock { border-top-color: var(--orange); }
+.flow-card.missing { border-top-color: var(--red); }
+.flow-card.runtime { border-top-color: #6a7fb3; }
 .flow-card::after { content: ""; position: absolute; right: -22px; top: 48px; width: 22px; height: 2px; background: #8bb5df; }
 .flow-card:last-child::after { display: none; }
+.flow-index {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--blue-soft); color: #245fae;
+  font-weight: 900; font-size: 12px;
+}
+.flow-card.mock .flow-index { background: var(--orange-soft); color: #92501a; }
+.flow-card.missing .flow-index { background: #fde8e8; color: #b42318; }
+.flow-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.flow-state {
+  border-radius: 999px;
+  padding: 4px 7px;
+  background: var(--green-soft);
+  color: #17604d;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.flow-card.mock .flow-state, .flow-card.runtime .flow-state { background: var(--orange-soft); color: #92501a; }
+.flow-card.missing .flow-state { background: #fde8e8; color: #b42318; }
+.flow-step {
+  color: #23384d;
+  font-weight: 900;
+  line-height: 1.35;
+  min-height: 42px;
+}
+.flow-skill {
+  margin-top: 10px;
+  color: #31506c;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 800;
+}
+.flow-evidence {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.flow-toolline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
 .precheck-grid { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 10px; }
 .precheck-row {
   display: grid;
@@ -885,12 +953,137 @@ button:disabled { opacity: .62; cursor: progress; }
 .table th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
 .table-wrap { max-height: 560px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
 .empty { color: var(--muted); text-align: center; padding: 42px 12px; }
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(420px, .8fr);
+  gap: 14px;
+}
+.dashboard-grid.lower { margin-top: 14px; grid-template-columns: minmax(0, 1fr) minmax(360px, .58fr); }
+.dashboard-hero {
+  min-height: 270px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(23,107,90,.12), rgba(47,112,183,.08)),
+    #ffffff;
+}
+.eyebrow {
+  display: inline-flex;
+  border: 1px solid #badfd2;
+  background: #edf8f4;
+  color: #17604d;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 12px;
+}
+.dashboard-hero h2 { font-size: clamp(28px, 2vw, 38px); line-height: 1.18; margin: 0 0 12px; }
+.dashboard-hero p { max-width: 820px; font-size: 15px; color: #40515f; }
+.hero-metrics {
+  display: grid;
+  gap: 10px;
+}
+.hero-metrics div,
+.ops-status-card,
+.entry-card,
+.asset-row,
+.skill-card,
+.scenario-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255,255,255,.9);
+}
+.hero-metrics div { padding: 16px; }
+.hero-metrics b { font-size: 34px; color: var(--green); display: block; }
+.hero-metrics small { color: var(--muted); font-weight: 800; }
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.entry-card {
+  text-align: left;
+  padding: 14px;
+  color: var(--text);
+  min-height: 98px;
+}
+.entry-card:hover { border-color: #8fcfbd; box-shadow: 0 10px 20px rgba(36,96,83,.08); }
+.entry-card b { display: block; margin-bottom: 6px; font-size: 15px; }
+.entry-card small { color: var(--muted); line-height: 1.45; }
+.ops-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.ops-status-card { padding: 12px; min-height: 92px; }
+.ops-status-card b { display: block; font-size: 22px; color: var(--green); margin: 6px 0 2px; }
+.ops-status-card small { color: var(--muted); line-height: 1.35; }
+.scenario-list { display: grid; gap: 10px; }
+.scenario-item { padding: 12px; cursor: pointer; }
+.scenario-item:hover { border-color: #8fcfbd; }
+.scenario-item b { display: block; color: #1f3345; margin-bottom: 4px; }
+.scenario-item small { color: var(--muted); }
+.asset-layout {
+  display: grid;
+  grid-template-columns: minmax(380px, .42fr) minmax(0, 1fr);
+  gap: 14px;
+  min-height: calc(100vh - 132px);
+}
+.asset-list, .skill-matrix {
+  display: grid;
+  gap: 10px;
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+  padding-right: 3px;
+}
+.asset-row, .skill-card {
+  padding: 12px;
+  cursor: pointer;
+}
+.asset-row:hover, .asset-row.selected, .skill-card:hover, .skill-card.selected {
+  border-color: #8fcfbd;
+  box-shadow: 0 10px 20px rgba(36,96,83,.08);
+}
+.asset-row b, .skill-card b { display: block; margin-bottom: 6px; color: #1f3345; }
+.asset-row small, .skill-card small { color: var(--muted); line-height: 1.45; }
+.asset-detail {
+  min-height: 520px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.asset-kv {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px solid #edf2f7;
+}
+.asset-kv span:first-child { color: var(--muted); font-weight: 800; }
+.workflow-step-list { display: grid; gap: 8px; }
+.workflow-step-item {
+  border: 1px solid #dbe7ef;
+  border-left: 4px solid var(--blue);
+  border-radius: 8px;
+  padding: 10px;
+  background: #fbfdff;
+}
+.workflow-step-item b { display: block; margin-bottom: 4px; }
+.skill-matrix {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+}
+.skill-card.mock { border-left: 4px solid var(--orange); }
+.skill-card.real { border-left: 4px solid var(--green); }
 @media (max-width: 1180px) {
   .shell { grid-template-columns: 1fr; }
   .sidebar { position: sticky; top: 0; z-index: 10; height: auto; max-height: 92px; flex-direction: row; align-items: center; overflow: auto; }
   .side-card, .stats { display: none; }
   .nav { display: flex; min-width: max-content; }
-  .chat-shell, .graph-layout, .grid-2, .admin-grid, .task-context, .rag-health { grid-template-columns: 1fr; }
+  .chat-shell, .graph-layout, .grid-2, .admin-grid, .task-context, .rag-health, .dashboard-grid, .dashboard-grid.lower, .asset-layout, .dashboard-hero { grid-template-columns: 1fr; }
   .chat-shell { height: auto; min-height: 620px; }
   .chat-main { height: 680px; min-height: 620px; }
 }
@@ -902,7 +1095,7 @@ button:disabled { opacity: .62; cursor: progress; }
 }
 @media (max-width: 720px) {
   .topbar, .panel-head, .query-row, .chat-input, .graph-toolbar { flex-direction: column; align-items: stretch; }
-  .summary-grid, .grid-3, .two, .agent-grid, .agent-board, .lifecycle-rail { grid-template-columns: 1fr; }
+  .summary-grid, .grid-3, .two, .agent-grid, .agent-board, .lifecycle-rail, .entry-grid, .ops-status-grid, .skill-matrix { grid-template-columns: 1fr; }
   .message { max-width: 96%; }
 }
 </style>
@@ -918,12 +1111,15 @@ button:disabled { opacity: .62; cursor: progress; }
       </div>
     </div>
     <nav class="nav">
-      <button class="active" data-tab="task">执行前检查台</button>
-      <button data-tab="chat">协同诊断会话</button>
+      <button class="active" data-tab="dashboard">运行总览</button>
+      <button data-tab="workflows">流程资产</button>
+      <button data-tab="skills">技能中心</button>
+      <button data-tab="task">任务编排台</button>
+      <button data-tab="chat">运行诊断</button>
       <button data-tab="graph">知识拓扑</button>
       <button data-tab="knowledge">知识库运维</button>
     </nav>
-    <div class="side-card">执行前检查台用于确认将进入 Graph 的流程、数据可用性和半真实推演步骤；协同诊断会话负责实际运行 Agent 并沉淀证据。</div>
+    <div class="side-card">以 Workflow 固化专业处置流程，以 Skill 封装可复用能力，以 Agent Graph 完成动态编排、工具调用、补证复核和报告生成。</div>
     <div class="stats">
       <div class="stat"><b id="statTemplates">0</b><small>流程模板</small></div>
       <div class="stat"><b id="statNodes">0</b><small>图谱节点</small></div>
@@ -934,37 +1130,144 @@ button:disabled { opacity: .62; cursor: progress; }
   <main class="main">
     <header class="topbar">
       <div>
-        <h1 id="pageTitle">执行前检查台</h1>
-        <p id="pageSubtitle">识别任务意图，检查 Graph 计划、样例数据和需要半真实推演的步骤。</p>
+        <h1 id="pageTitle">运行总览</h1>
+        <p id="pageSubtitle">集中查看流程资产、技能能力、知识资源和运行诊断状态。</p>
       </div>
       <div class="status-pill" id="apiStatus">连接检测中</div>
     </header>
 
-    <section id="tab-task" class="tab-panel active">
+    <section id="tab-dashboard" class="tab-panel active">
+      <div class="dashboard-grid">
+        <section class="panel dashboard-hero">
+          <div>
+            <div class="eyebrow">Workflow · Skill · Agent</div>
+            <h2>面向电网调度运维的诊断编排平台</h2>
+            <p>系统将告警任务先映射到可治理流程资产，再按步骤调度技能、知识库、图谱和算子工具，最终由 Agent Graph 记录执行轨迹并生成诊断结论。</p>
+          </div>
+          <div class="hero-metrics">
+            <div><b id="assetWorkflowTotal">0</b><small>流程资产</small></div>
+            <div><b id="assetSkillTotal">0</b><small>技能能力</small></div>
+            <div><b id="assetMockTotal">0</b><small>推演算子</small></div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>运行入口</h2>
+              <p>按工作对象进入对应页面，展示时可从总览切到任务、执行、知识和运维链路。</p>
+            </div>
+          </div>
+          <div class="entry-grid">
+            <button class="entry-card" onclick="switchTab('task')"><b>任务编排台</b><small>自然语言任务匹配流程模板、步骤和关联图谱</small></button>
+            <button class="entry-card" onclick="switchTab('chat')"><b>运行诊断控制台</b><small>实际执行 Graph、多 Agent、工具调用和报告生成</small></button>
+            <button class="entry-card" onclick="switchTab('workflows')"><b>流程治理</b><small>查看和维护可编辑 Workflow，沉淀处置经验</small></button>
+            <button class="entry-card" onclick="switchTab('skills')"><b>技能复用</b><small>查看 Skill 与工具、场景、流程绑定关系</small></button>
+            <button class="entry-card" onclick="switchTab('graph')"><b>知识拓扑</b><small>浏览流程、工具、知识实体之间的组织关系</small></button>
+            <button class="entry-card" onclick="switchTab('knowledge')"><b>知识库运维</b><small>维护规程、案例、文档切片和向量检索状态</small></button>
+          </div>
+        </section>
+      </div>
+      <div class="dashboard-grid lower">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>诊断链路状态</h2>
+              <p>从任务进入运行前，先确认流程、技能、知识、图谱和基础设施的可用性。</p>
+            </div>
+          </div>
+          <div id="enterpriseStatus" class="ops-status-grid">
+            <div class="empty">正在读取系统状态</div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>典型场景</h2>
+              <p>用于快速演示 Workflow 到 Agent 执行的完整过程。</p>
+            </div>
+          </div>
+          <div id="diagnosisCases" class="scenario-list"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-workflows" class="tab-panel">
+      <div class="asset-layout">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>流程资产库</h2>
+              <p>沉淀可配置、可编辑、可复用的电网处置流程；流程中的每一步可绑定一个或多个 Skill。</p>
+            </div>
+            <button class="primary" onclick="createWorkflowDraft()">新建流程</button>
+          </div>
+          <div class="query-row" style="margin-bottom:12px;">
+            <input id="workflowSearchInput" placeholder="搜索流程名称、场景或关键词">
+            <button class="secondary" onclick="loadWorkflows()">刷新</button>
+          </div>
+          <div id="workflowList" class="asset-list"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>流程详情</h2>
+              <p>展示流程版本、适用场景、步骤、技能绑定和执行蓝图。</p>
+            </div>
+          </div>
+          <div id="workflowDetail" class="asset-detail"><div class="empty">请选择一个流程</div></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-skills" class="tab-panel">
+      <div class="asset-layout">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>技能中心</h2>
+              <p>Skill 封装可复用专业能力，向上被 Workflow 编排，向下调用工具、知识库、图谱或推演算子。</p>
+            </div>
+            <button class="secondary" onclick="loadSkills()">刷新</button>
+          </div>
+          <div id="skillMatrix" class="skill-matrix"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>能力说明</h2>
+              <p>查看技能适用场景、推荐工具、绑定流程数量和当前数据边界。</p>
+            </div>
+          </div>
+          <div id="skillDetail" class="asset-detail"><div class="empty">请选择一个技能</div></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-task" class="tab-panel">
       <div class="grid-2">
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2>执行链路检查</h2>
-              <p>输入调度或运维任务，系统基于 BGE 语义匹配和关键词校验确定流程，并检查实际会进入 Graph 的步骤。</p>
+              <h2>任务到流程映射</h2>
+              <p>输入调度或运维任务，系统基于 BGE 语义匹配和关键词校验确定 Workflow，并展示可调用 Skill、Graph 步骤和关联知识节点。</p>
             </div>
             <button class="secondary" onclick="resetTask()">重置</button>
           </div>
           <div class="query-row">
             <input id="taskInput" value="主变油温异常诊断，请查询状态、告警历史并给出处置建议" placeholder="例如：负荷转供操作校核、N-1 风险分析、主变油温异常诊断">
-            <button id="matchBtn" class="primary" onclick="matchTask()">生成检查</button>
+            <button id="matchBtn" class="primary" onclick="matchTask()">生成编排</button>
           </div>
           <div class="lifecycle-rail">
             <div class="lifecycle-step"><b>1. 流程匹配</b><small>匹配模板、知识节点和目标 Graph。</small></div>
-            <div class="lifecycle-step"><b>2. 数据检查</b><small>确认样例数据、RAG、图谱和推演算子状态。</small></div>
+            <div class="lifecycle-step"><b>2. 能力校验</b><small>确认样例数据、RAG、图谱和推演算子状态。</small></div>
             <div class="lifecycle-step"><b>3. 协同执行</b><small>进入诊断控制台，由 Agent 调用工具并沉淀证据。</small></div>
           </div>
           <div class="chip-row" id="quickPrompts"></div>
           <div class="summary-grid" id="matchSummary"></div>
           <div id="handoffCard" class="handoff-card" style="display:none;">
             <div>
-              <b>检查完成，可进入协同执行</b>
-              <small id="handoffText">诊断控制台将按检查结果装载 Graph，并展示 Agent 协作轨迹。</small>
+              <b>编排完成，可进入运行诊断</b>
+              <small id="handoffText">诊断控制台将按编排结果装载 Graph，并展示 Agent 协作轨迹。</small>
             </div>
             <button class="success" onclick="startMatchedTaskExecution()">启动诊断执行</button>
           </div>
@@ -1221,9 +1524,21 @@ var quickPrompts = [
   '新能源场站全场停电，请生成处置关注点'
 ];
 var sidebarAgents = {};
+var assetState = {
+  overview: null,
+  workflows: [],
+  skills: [],
+  selectedWorkflow: null,
+  selectedWorkflowId: '',
+  selectedSkillId: '',
+  editingWorkflowId: ''
+};
 
 var tabMeta = {
-  task: ['执行前检查台', '将自然语言任务映射到 Graph 计划，检查数据可用性和半真实推演步骤。'],
+  dashboard: ['运行总览', '集中查看流程资产、技能能力、知识资源和运行诊断状态。'],
+  workflows: ['流程资产', '维护可配置、可编辑、可复用的电网处置流程。'],
+  skills: ['技能中心', '管理可被 Workflow 编排、可被 Agent 调用的专业能力单元。'],
+  task: ['任务编排台', '将自然语言任务映射到 Workflow、Skill、Graph 计划和关联知识资产。'],
   chat: ['运行诊断控制台', '真正执行 Graph、多 Agent、工具调用、RAG 检索和诊断总结。'],
   graph: ['知识拓扑', '按流程编排、工具依赖、知识约束和任务子图浏览内置知识组织。'],
   knowledge: ['知识库运维', '在同一套界面中完成文档上传、列表查看和检索测试。']
@@ -1241,7 +1556,19 @@ var toolLabels = {
   analyzeTopology: '分析拓扑影响',
   calculatePowerFlowEstimate: '估算潮流变化',
   checkOperationRisk: '校核操作风险',
-  generateFaultScenario: '生成故障场景'
+  assessTransformerOilTempRisk: '主变油温规则校核',
+  generateFaultScenario: '生成故障场景',
+  'device-profile-query': '设备台账查询',
+  'device-status-query': '设备状态查询',
+  'alarm-history-retrieval': '历史告警检索',
+  'operation-log-retrieval': '运行日志检索',
+  'defect-ticket-check': '缺陷工单查询',
+  'safety-regulation-qa': '安全规程检索',
+  'rag-evidence-retrieval': '规程案例检索',
+  'knowledge-graph-topology-analysis': '知识图谱与拓扑分析',
+  'transformer-oil-temperature-risk-check': '主变油温规则校核',
+  'operation-risk-simulation': '运行风险推演',
+  'diagnosis-report-generation': '诊断报告生成'
 };
 
 function generateSessionId() { return 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
@@ -1415,6 +1742,9 @@ function switchTab(tab) {
   document.getElementById('pageTitle').textContent = tabMeta[tab][0];
   document.getElementById('pageSubtitle').textContent = tabMeta[tab][1];
   location.hash = tab;
+  if (tab === 'dashboard') { loadEnterpriseOverview(); }
+  if (tab === 'workflows') { loadWorkflows(); }
+  if (tab === 'skills') { loadSkills(); }
   if (tab === 'graph') { syncGraphModeButtons(); loadGraph(); bindGraphInteractions(); }
   if (tab === 'knowledge') { loadDocuments(); loadRagHealth(); }
 }
@@ -1449,16 +1779,222 @@ async function loadOverview() {
     document.getElementById('apiStatus').textContent = 'API 未连接';
   }
 }
+async function loadEnterpriseOverview() {
+  try {
+    var assetOverview = await fetch('/api/workflow-assets/overview').then(function(r){ return r.json(); });
+    assetState.overview = assetOverview;
+    document.getElementById('assetWorkflowTotal').textContent = assetOverview.workflowTotal || 0;
+    document.getElementById('assetSkillTotal').textContent = assetOverview.skillTotal || 0;
+    document.getElementById('assetMockTotal').textContent = assetOverview.mockSkillTotal || 0;
+    var status = document.getElementById('enterpriseStatus');
+    status.innerHTML = [
+      {title:'流程资产', value:(assetOverview.workflowEnabled || 0) + '/' + (assetOverview.workflowTotal || 0), note:'已启用流程 / 总流程'},
+      {title:'技能能力', value:assetOverview.skillTotal || 0, note:'可供流程编排调用'},
+      {title:'推演算子', value:assetOverview.mockSkillTotal || 0, note:'用于方案推演和人工复核线索'},
+      {title:'执行治理', value:'已接入', note:'流程、技能、溯源、人工确认'}
+    ].map(function(item) {
+      return '<div class="ops-status-card"><span class="tag tool">' + escapeHtml(item.title) + '</span><b>' + escapeHtml(item.value) + '</b><small>' + escapeHtml(item.note) + '</small></div>';
+    }).join('');
+    var cases = document.getElementById('diagnosisCases');
+    cases.innerHTML = (assetOverview.diagnosisCases || []).map(function(text) {
+      return '<div class="scenario-item" data-scenario="' + escapeHtml(text) + '" onclick="jumpScenario(this.dataset.scenario)"><b>' + escapeHtml(text) + '</b><small>点击进入任务编排台生成流程预览</small></div>';
+    }).join('') || '<div class="empty">暂无场景</div>';
+  } catch (e) {
+    document.getElementById('enterpriseStatus').innerHTML = '<div class="empty">读取失败：' + escapeHtml(e.message) + '</div>';
+  }
+}
+function jumpScenario(text) {
+  document.getElementById('taskInput').value = text;
+  document.getElementById('questionInput').value = text;
+  switchTab('task');
+  matchTask();
+}
+async function loadWorkflows() {
+  var wrap = document.getElementById('workflowList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="empty">正在读取流程资产</div>';
+  try {
+    var data = await fetch('/api/workflow-assets/workflows').then(function(r){ return r.json(); });
+    var keyword = (document.getElementById('workflowSearchInput') || {}).value || '';
+    keyword = keyword.trim().toLowerCase();
+    assetState.workflows = (data.workflows || []).filter(function(w) {
+      if (!keyword) return true;
+      return [w.name, w.scenarioType, w.description, (w.triggerKeywords || []).join(' ')].join(' ').toLowerCase().includes(keyword);
+    });
+    renderWorkflowList();
+    if (!assetState.selectedWorkflowId && assetState.workflows[0]) selectWorkflow(assetState.workflows[0].workflowId);
+  } catch (e) {
+    wrap.innerHTML = '<div class="empty">读取失败：' + escapeHtml(e.message) + '</div>';
+  }
+}
+function renderWorkflowList() {
+  var wrap = document.getElementById('workflowList');
+  wrap.innerHTML = assetState.workflows.map(function(w) {
+    var selected = w.workflowId === assetState.selectedWorkflowId ? ' selected' : '';
+    var tags = '<span class="tag tool">' + escapeHtml(w.source || 'RESOURCE') + '</span><span class="tag">' + escapeHtml(w.riskLevel || 'MEDIUM') + '</span>';
+    return '<div class="asset-row' + selected + '" data-workflow-id="' + escapeHtml(w.workflowId) + '" onclick="selectWorkflow(this.dataset.workflowId)"><b>' +
+      escapeHtml(w.name || w.workflowId) + '</b><small>' + escapeHtml(w.description || '无描述') +
+      '</small><div style="margin-top:8px;">' + tags + '</div></div>';
+  }).join('') || '<div class="empty">暂无流程</div>';
+}
+async function selectWorkflow(id) {
+  assetState.selectedWorkflowId = id;
+  renderWorkflowList();
+  var detail = document.getElementById('workflowDetail');
+  detail.innerHTML = '<div class="empty">正在读取流程详情</div>';
+  try {
+    var workflow = await fetch('/api/workflow-assets/workflows/' + encodeURIComponent(id)).then(function(r){ return r.json(); });
+    var blueprint = await fetch('/api/workflow-assets/workflows/' + encodeURIComponent(id) + '/blueprint').then(function(r){ return r.json(); });
+    assetState.selectedWorkflow = workflow;
+    renderWorkflowDetail(workflow, blueprint);
+  } catch (e) {
+    detail.innerHTML = '<div class="empty">读取失败：' + escapeHtml(e.message) + '</div>';
+  }
+}
+function renderWorkflowDetail(workflow, blueprint) {
+  var detail = document.getElementById('workflowDetail');
+  var editable = workflow.source === 'USER_EDITABLE';
+  var steps = (workflow.steps || []).map(function(step, idx) {
+    var chips = [];
+    if (step.skillName) chips.push('<span class="tool-chip">' + escapeHtml(step.skillName) + '</span>');
+    (step.skillIds || []).forEach(function(skill) { chips.push('<span class="tool-chip">' + escapeHtml(toolLabel(skill)) + '</span>'); });
+    if (step.toolName) chips.push('<span class="tool-chip mock">' + escapeHtml(toolLabel(step.toolName)) + '</span>');
+    return '<div class="workflow-step-item"><b>' + (idx + 1) + '. ' + escapeHtml(step.name || step.stepId) + '</b><small>' +
+      escapeHtml(step.evidenceRequirement || step.purpose || '') + '</small><div class="tool-chips">' +
+      chips.join('') +
+      '</div></div>';
+  }).join('');
+  var nodes = ((blueprint && blueprint.nodes) || []).map(function(n) { return '<span class="tag skill">' + escapeHtml(n.label || n.id) + '</span>'; }).join('');
+  detail.innerHTML =
+    '<div class="asset-kv"><span>流程名称</span><b>' + escapeHtml(workflow.name || workflow.workflowId) + '</b></div>' +
+    '<div class="asset-kv"><span>适用场景</span><span>' + escapeHtml(workflow.scenarioType || '-') + '</span></div>' +
+    '<div class="asset-kv"><span>版本来源</span><span>' + escapeHtml((workflow.version || '1.0') + ' · ' + (workflow.source || 'RESOURCE')) + '</span></div>' +
+    '<div class="asset-kv"><span>关键词</span><span>' + (workflow.triggerKeywords || []).map(function(k){ return '<span class="tag">' + escapeHtml(k) + '</span>'; }).join('') + '</span></div>' +
+    '<div><b>执行步骤</b><div class="workflow-step-list" style="margin-top:8px;">' + steps + '</div></div>' +
+    '<div><b>Graph 蓝图</b><div style="margin-top:8px;">' + nodes + '</div></div>' +
+    '<div class="query-row"><button class="primary" onclick="cloneSelectedWorkflow()">复制为可编辑流程</button><button class="secondary" onclick="renderWorkflowEditor(assetState.selectedWorkflow)">' + (editable ? '编辑流程' : '编辑为草案') + '</button></div>';
+}
+function createWorkflowDraft() {
+  renderWorkflowEditor({
+    name: '新增电网处置流程',
+    version: '0.1',
+    scenarioType: 'diagnosis',
+    description: '用于沉淀新的调度运维处置经验',
+    triggerKeywords: ['告警', '诊断', '复核'],
+    riskLevel: 'MEDIUM',
+    enabled: true,
+    steps: []
+  });
+}
+function cloneSelectedWorkflow() {
+  if (!assetState.selectedWorkflow) return;
+  var clone = JSON.parse(JSON.stringify(assetState.selectedWorkflow));
+  clone.workflowId = '';
+  clone.name = (clone.name || '流程') + ' - 可编辑副本';
+  clone.source = 'USER_EDITABLE';
+  renderWorkflowEditor(clone);
+}
+function renderWorkflowEditor(workflow) {
+  workflow = workflow || {};
+  assetState.editingWorkflowId = workflow.source === 'USER_EDITABLE' ? (workflow.workflowId || '') : '';
+  var stepsText = JSON.stringify(workflow.steps || [], null, 2);
+  document.getElementById('workflowDetail').innerHTML =
+    '<div class="asset-kv"><span>编辑模式</span><b>Workflow 草案</b></div>' +
+    '<input id="workflowEditId" value="' + escapeHtml(assetState.editingWorkflowId) + '" type="hidden">' +
+    '<input id="workflowEditName" value="' + escapeHtml(workflow.name || '') + '" placeholder="流程名称">' +
+    '<div class="two"><input id="workflowEditScenario" value="' + escapeHtml(workflow.scenarioType || 'diagnosis') + '" placeholder="适用场景"><input id="workflowEditRisk" value="' + escapeHtml(workflow.riskLevel || 'MEDIUM') + '" placeholder="风险等级"></div>' +
+    '<textarea id="workflowEditDescription" rows="3" placeholder="流程说明">' + escapeHtml(workflow.description || '') + '</textarea>' +
+    '<input id="workflowEditKeywords" value="' + escapeHtml((workflow.triggerKeywords || []).join(',')) + '" placeholder="关键词，用逗号分隔">' +
+    '<label style="font-weight:900;color:#263744;">步骤定义 JSON</label>' +
+    '<textarea id="workflowEditSteps" rows="12" spellcheck="false">' + escapeHtml(stepsText) + '</textarea>' +
+    '<div class="query-row"><button class="primary" onclick="saveWorkflowEditor()">保存流程</button><button class="secondary" onclick="loadWorkflows()">取消</button></div>' +
+    '<small>说明：第一版使用 JSON 编辑步骤，后续可升级为拖拽式流程设计器和 Skill 选择器。</small>';
+}
+async function saveWorkflowEditor() {
+  var steps = [];
+  try {
+    steps = JSON.parse(document.getElementById('workflowEditSteps').value || '[]');
+  } catch (e) {
+    alert('步骤 JSON 格式不正确：' + e.message);
+    return;
+  }
+  var draft = {
+    workflowId: document.getElementById('workflowEditId').value || undefined,
+    name: document.getElementById('workflowEditName').value.trim(),
+    version: '1.0',
+    scenarioType: document.getElementById('workflowEditScenario').value.trim() || 'diagnosis',
+    description: document.getElementById('workflowEditDescription').value.trim(),
+    triggerKeywords: document.getElementById('workflowEditKeywords').value.split(',').map(function(v){ return v.trim(); }).filter(Boolean),
+    riskLevel: document.getElementById('workflowEditRisk').value.trim() || 'MEDIUM',
+    steps: steps,
+    enabled: true
+  };
+  var id = draft.workflowId;
+  var url = id ? '/api/workflow-assets/workflows/' + encodeURIComponent(id) : '/api/workflow-assets/workflows';
+  var method = id ? 'PUT' : 'POST';
+  await fetch(url, {method: method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(draft)});
+  assetState.selectedWorkflowId = '';
+  assetState.selectedWorkflow = null;
+  assetState.editingWorkflowId = '';
+  loadWorkflows();
+}
+async function loadSkills() {
+  var wrap = document.getElementById('skillMatrix');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="empty">正在读取技能中心</div>';
+  try {
+    var data = await fetch('/api/workflow-assets/skills').then(function(r){ return r.json(); });
+    assetState.skills = data.skills || [];
+    renderSkillMatrix();
+    if (!assetState.selectedSkillId && assetState.skills[0]) selectSkill(assetState.skills[0].skillId);
+  } catch (e) {
+    wrap.innerHTML = '<div class="empty">读取失败：' + escapeHtml(e.message) + '</div>';
+  }
+}
+function renderSkillMatrix() {
+  var wrap = document.getElementById('skillMatrix');
+  wrap.innerHTML = assetState.skills.map(function(skill) {
+    var selected = skill.skillId === assetState.selectedSkillId ? ' selected' : '';
+    var mode = skill.mockMode ? 'mock' : 'real';
+    return '<div class="skill-card ' + mode + selected + '" data-skill-id="' + escapeHtml(skill.skillId) + '" onclick="selectSkill(this.dataset.skillId)"><b>' +
+      escapeHtml(skill.displayName || skill.skillId) + '</b><small>' + escapeHtml(skill.description || '-') +
+      '</small><div style="margin-top:8px;"><span class="tag skill">' + escapeHtml(skill.type || 'skill') +
+      '</span><span class="tag">' + escapeHtml((skill.boundWorkflowCount || 0) + ' 个流程绑定') + '</span></div></div>';
+  }).join('') || '<div class="empty">暂无技能</div>';
+}
+function selectSkill(id) {
+  assetState.selectedSkillId = id;
+  renderSkillMatrix();
+  var skill = assetState.skills.find(function(s) { return s.skillId === id; });
+  if (!skill) return;
+  document.getElementById('skillDetail').innerHTML =
+    '<div class="asset-kv"><span>技能名称</span><b>' + escapeHtml(skill.displayName || skill.skillId) + '</b></div>' +
+    '<div class="asset-kv"><span>技术标识</span><span>' + escapeHtml(skill.technicalName || skill.skillId) + '</span></div>' +
+    '<div class="asset-kv"><span>能力类型</span><span>' + escapeHtml(skill.type || '-') + '</span></div>' +
+    '<div class="asset-kv"><span>运行模式</span><span>' + (skill.mockMode ? '<span class="tag tool">推演/估算</span>' : '<span class="tag skill">真实工具</span>') + '</span></div>' +
+    '<div class="asset-kv"><span>推荐工具</span><span>' + (skill.recommendedTools || []).map(function(t){ return '<span class="tool-chip">' + escapeHtml(toolLabel(t)) + '</span>'; }).join('') + '</span></div>' +
+    '<div class="asset-kv"><span>适用场景</span><span>' + (skill.applicableScenarios || []).map(function(t){ return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</span></div>' +
+    '<p>' + escapeHtml(skill.description || '') + '</p>';
+}
 async function matchTask() {
   var query = document.getElementById('taskInput').value.trim();
   if (!query) return;
   setTaskLoading(true);
   try {
-    var payload = await fetch('/api/knowledge-org/instant-plan', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({query: query})
-    }).then(function(r){ return r.json(); });
+    var results = await Promise.all([
+      fetch('/api/knowledge-org/instant-plan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({query: query})
+      }).then(function(r){ return r.json(); }),
+      fetch('/api/workflow-assets/match', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({query: query})
+      }).then(function(r){ return r.json(); }).catch(function(){ return null; })
+    ]);
+    var payload = results[0];
+    payload.workflow_asset_match = results[1];
     taskState.payload = payload;
     taskState.candidateNodes = payload.candidate_nodes || [];
     taskState.selectedNodeId = taskState.candidateNodes[0] ? taskState.candidateNodes[0].id : '';
@@ -1469,7 +2005,7 @@ async function matchTask() {
     renderHandoff(payload, query);
   } catch (e) {
     document.getElementById('matchSummary').innerHTML =
-    '<div class="match-card"><h3>生成失败</h3><div class="match-title">执行检查未生成</div><small>' + escapeHtml(e.message || e) + '</small></div>';
+    '<div class="match-card"><h3>生成失败</h3><div class="match-title">任务编排未生成</div><small>' + escapeHtml(e.message || e) + '</small></div>';
     document.getElementById('workflowFlow').innerHTML = '<div class="empty">请检查后端服务、BGE embedding 服务和网络连接后重试。</div>';
     hideHandoff();
   } finally {
@@ -1480,7 +2016,7 @@ function setTaskLoading(loading) {
   var btn = document.getElementById('matchBtn');
   if (btn) {
     btn.disabled = loading;
-    btn.textContent = loading ? '检查中...' : '生成检查';
+    btn.textContent = loading ? '编排中...' : '生成编排';
   }
   if (!loading) return;
   document.getElementById('matchSummary').innerHTML =
@@ -1491,13 +2027,13 @@ function setTaskLoading(loading) {
       '<small>计算任务语义向量，结合关键词校验筛选近似模板。</small>' +
     '</div>' +
     '<div class="match-card loading">' +
-      '<h3>执行条件检查</h3>' +
-      '<div class="match-title loading-dots">正在核对数据状态</div>' +
+      '<h3>执行条件校验</h3>' +
+      '<div class="match-title loading-dots">正在核对能力状态</div>' +
       '<div class="match-meter"><span style="width:48%"></span></div>' +
       '<small>核对样例数据、RAG、图谱和半真实推演步骤。</small>' +
     '</div>';
   document.getElementById('workflowFlow').innerHTML =
-    '<div class="empty"><b>正在生成执行前检查</b><br><small>首次匹配会初始化本地语义索引，可能稍慢。</small></div>';
+    '<div class="empty"><b>正在生成任务编排</b><br><small>首次匹配会初始化本地语义索引，可能稍慢。</small></div>';
   document.getElementById('candidateNodes').innerHTML =
     '<div class="empty">正在筛选相关流程、工具和知识节点...</div>';
   document.getElementById('taskTemplateDetail').innerHTML =
@@ -1506,9 +2042,12 @@ function setTaskLoading(loading) {
 }
 function renderMatch(payload) {
   var template = payload.template || {};
+  var assetMatch = payload.workflow_asset_match || {};
+  var workflow = assetMatch.workflow || {};
   var score = Number(payload.score || 0);
   var percent = Math.max(8, Math.min(100, score * 14));
   var tools = (payload.recommended_tools || []).slice(0, 8);
+  var skills = (assetMatch.recommendedSkills || []).slice(0, 6);
   document.getElementById('matchSummary').innerHTML =
     '<div class="match-card">' +
       '<h3>匹配流程</h3>' +
@@ -1520,11 +2059,17 @@ function renderMatch(payload) {
       '<h3>推荐能力</h3>' +
       '<div class="tool-chips">' + (tools.length ? tools.map(renderToolChip).join('') : '<span class="tool-chip">暂无推荐</span>') + '</div>' +
       '<small>来自命中模板和相关知识节点，用于进入 Graph 前的能力确认。</small>' +
+    '</div>' +
+    '<div class="match-card">' +
+      '<h3>流程资产</h3>' +
+      '<div class="match-title">' + escapeHtml(workflow.name || template.name || '未命中') + '</div>' +
+      '<div class="tool-chips">' + (skills.length ? skills.map(function(skill){ return '<span class="tool-chip">' + escapeHtml(skill.displayName || skill.skillId) + '</span>'; }).join('') : '<span class="tool-chip">等待技能绑定</span>') + '</div>' +
+      '<small>Workflow 负责处置顺序，Skill 负责专业能力，Agent 负责执行时动态补证和复核。</small>' +
     '</div>';
   renderExecutionPrecheck(payload);
 }
 function renderToolChip(tool) {
-  var mock = ['calculatePowerFlowEstimate','checkOperationRisk','generateFaultScenario'].indexOf(tool) >= 0;
+  var mock = ['calculatePowerFlowEstimate','checkOperationRisk','generateFaultScenario','assessTransformerOilTempRisk'].indexOf(tool) >= 0;
   return '<span class="tool-chip ' + (mock ? 'mock' : '') + '">' + escapeHtml(toolDisplayName(tool)) + '</span>';
 }
 function renderExecutionPrecheck(payload) {
@@ -1532,32 +2077,100 @@ function renderExecutionPrecheck(payload) {
   var summary = precheck.summary || {};
   var checks = precheck.checks || [];
   var graphName = precheck.graph_name || payload.execution_graph || 'power_ops_workflow';
-  var html =
-    '<div class="empty" style="margin-bottom:10px;text-align:left;">' +
-      '<b>目标 Graph：' + escapeHtml(graphDisplayName(graphName)) + '</b><br>' +
-      '<small>检查 ' + escapeHtml(summary.total_steps || checks.length || 0) + ' 步，' +
-      '就绪 ' + escapeHtml(summary.ready_steps || 0) + '，' +
-      '半真实/运行时 ' + escapeHtml(summary.semi_real_or_runtime_steps || 0) + '，' +
-      '缺失 ' + escapeHtml(summary.missing_steps || 0) + '。</small>' +
-    '</div>';
-  html += '<div class="precheck-grid">';
-  checks.forEach(function(check, index) {
-    var status = check.status || '';
-    var cls = status === 'READY' ? 'ready' : status === 'SEMI_REAL_ESTIMATE' ? 'estimate' : status === 'RAG_RUNTIME' ? 'runtime' : 'missing';
-    html += '<div class="precheck-row ' + cls + '">' +
-      '<div class="precheck-index">' + escapeHtml(check.step_no || index + 1) + '</div>' +
-      '<div>' +
-        '<div class="precheck-title">' + escapeHtml(check.action || '待执行步骤') + '</div>' +
-        '<div class="precheck-evidence">' + escapeHtml(check.tool_label || toolDisplayName(check.tool || '')) + ' · ' + escapeHtml(check.evidence || '') + '</div>' +
+  var assetMatch = payload.workflow_asset_match || {};
+  var workflow = assetMatch.workflow || {};
+  var template = payload.template || {};
+  var steps = normalizeWorkflowSteps(workflow.steps || [], template.workflow || [], payload.plan_steps || []);
+  var total = steps.length || summary.total_steps || checks.length || 0;
+  var html = '<div class="flow-summary">' +
+    '<span class="badge">目标 Graph：' + escapeHtml(graphDisplayName(graphName)) + '</span>' +
+    '<span class="badge">流程步骤 ' + escapeHtml(total) + '</span>' +
+    '<span class="badge">就绪 ' + escapeHtml(summary.ready_steps || 0) + '</span>' +
+    '<span class="badge">运行时/半真实 ' + escapeHtml(summary.semi_real_or_runtime_steps || 0) + '</span>' +
+    '<span class="badge">待补齐 ' + escapeHtml(summary.missing_steps || 0) + '</span>' +
+  '</div>';
+  html += '<div class="flow-row">';
+  steps.forEach(function(step, index) {
+    var check = findPrecheckForStep(step, index, checks);
+    var status = check.status || step.status || 'READY';
+    var cls = flowStatusClass(status, step.toolName);
+    var statusLabel = check.status_label || flowStatusLabel(status, step.toolName);
+    var evidence = step.evidence || check.evidence || step.purpose || '';
+    html += '<div class="flow-card ' + cls + '">' +
+      '<div class="flow-head">' +
+        '<div class="flow-index">' + escapeHtml(step.no || index + 1) + '</div>' +
+        '<div class="flow-state">' + escapeHtml(statusLabel) + '</div>' +
       '</div>' +
-      '<div class="precheck-status">' + escapeHtml(check.status_label || status) + '</div>' +
+      '<div class="flow-step">' + escapeHtml(step.title || '待执行步骤') + '</div>' +
+      '<div class="flow-skill">能力：' + escapeHtml(step.skillName || 'Agent 编排') + '</div>' +
+      '<div class="flow-toolline">' + (step.toolName ? renderToolChip(step.toolName) : '<span class="tool-chip">报告/判断</span>') + '</div>' +
+      '<div class="flow-evidence">' + escapeHtml(evidence || '依据运行上下文生成中间产物') + '</div>' +
     '</div>';
   });
   html += '</div>';
-  document.getElementById('workflowFlow').innerHTML = checks.length ? html : '<div class="empty">未生成执行检查</div>';
+  document.getElementById('workflowFlow').innerHTML = steps.length ? html : '<div class="empty">未生成任务编排</div>';
+}
+function normalizeWorkflowSteps(assetSteps, legacySteps, planSteps) {
+  var source = assetSteps && assetSteps.length ? assetSteps : [];
+  if (!source.length && legacySteps && legacySteps.length) source = legacySteps;
+  if (!source.length && planSteps && planSteps.length) source = planSteps;
+  return source.map(function(step, index) {
+    var skillIds = step.skillIds || step.skill_ids || [];
+    var skillName = step.skillName || step.businessSkillName || step.skill_name || '';
+    if (!skillName && skillIds.length) {
+      skillName = skillIds.map(function(id){ return toolDisplayName(id); }).join('、');
+    }
+    return {
+      no: step.stepNo || step.step_no || step.no || index + 1,
+      title: step.name || step.step || step.action || step.purpose || step.stepId || step.step_id,
+      skillName: skillName,
+      toolName: step.toolName || step.tool_name || step.tool,
+      evidence: step.evidenceRequirement || step.evidence_requirement || step.description || step.purpose || step.output,
+      purpose: step.purpose
+    };
+  });
+}
+function findPrecheckForStep(step, index, checks) {
+  if (!checks || !checks.length) return {};
+  var tool = step.toolName || '';
+  var title = step.title || '';
+  return checks.find(function(check) {
+    return tool && check.tool === tool;
+  }) || checks.find(function(check) {
+    return (check.step_no || 0) === (step.no || index + 1);
+  }) || checks.find(function(check) {
+    return title && check.action && (check.action.indexOf(title) >= 0 || title.indexOf(check.action) >= 0);
+  }) || {};
+}
+function flowStatusClass(status, toolName) {
+  if (status === 'READY') return '';
+  if (status === 'RAG_RUNTIME') return 'runtime';
+  if (status === 'SEMI_REAL_ESTIMATE') return 'mock';
+  if (status === 'MISSING') return 'missing';
+  if (['calculatePowerFlowEstimate','checkOperationRisk','generateFaultScenario','assessTransformerOilTempRisk'].indexOf(toolName) >= 0) return 'mock';
+  return '';
+}
+function flowStatusLabel(status, toolName) {
+  if (status === 'READY') return '就绪';
+  if (status === 'RAG_RUNTIME') return '运行时检索';
+  if (status === 'SEMI_REAL_ESTIMATE') return '规则校核';
+  if (status === 'MISSING') return '待补齐';
+  if (['calculatePowerFlowEstimate','checkOperationRisk','generateFaultScenario','assessTransformerOilTempRisk'].indexOf(toolName) >= 0) return '规则校核';
+  return '就绪';
 }
 function toolDisplayName(tool) {
   var labels = {
+    'device-profile-query': '设备台账查询',
+    'device-status-query': '设备状态查询',
+    'alarm-history-retrieval': '历史告警检索',
+    'operation-log-retrieval': '运行日志检索',
+    'defect-ticket-check': '缺陷工单查询',
+    'safety-regulation-qa': '安规条款查询',
+    'rag-evidence-retrieval': '知识证据检索',
+    'knowledge-graph-topology-analysis': '知识图谱拓扑分析',
+    'operation-risk-simulation': '运行风险推演',
+    'transformer-oil-temperature-risk-check': '主变油温规则校核',
+    'diagnosis-report-generation': '诊断报告生成',
     getDeviceProfile: '设备档案',
     getDeviceStatus: '设备状态',
     getAlarmHistory: '历史告警',
@@ -1569,7 +2182,8 @@ function toolDisplayName(tool) {
     analyzeTopology: '拓扑影响',
     calculatePowerFlowEstimate: '潮流估算',
     checkOperationRisk: '风险校核',
-    generateFaultScenario: '场景推演'
+    generateFaultScenario: '场景推演',
+    assessTransformerOilTempRisk: '主变油温规则校核'
   };
   return labels[tool] || tool || '分析步骤';
 }
@@ -2537,13 +3151,16 @@ function renderToolSummary(summary) {
 }
 function formatPlanStep(step, index) {
   var tool = step.toolName || step.tool;
-  return (index + 1) + '. ' + (step.action || step.step || step.stepId || '计划步骤') + (tool ? ' / ' + toolLabel(tool) : '');
+  var skill = step.businessSkillName || step.business_skill_name || step.businessSkillId || step.business_skill_id;
+  return (index + 1) + '. ' + (step.action || step.step || step.stepId || '计划步骤') +
+    (skill ? ' / ' + toolLabel(skill) : '') + (tool ? ' / ' + toolLabel(tool) : '');
 }
 function formatStepResult(result, index) {
   var tool = result.toolName || result.tool;
+  var skill = result.businessSkillName || result.business_skill_name || result.businessSkillId || result.business_skill_id;
   var action = result.action || toolLabel(tool) || '工具结果';
   var reason = result.errorType || result.error_type ? ' / ' + readableErrorType(result.errorType || result.error_type) : '';
-  return (index + 1) + '. ' + action + (tool ? ' / ' + toolLabel(tool) : '') + ' / ' + statusText(result.status) + reason;
+  return (index + 1) + '. ' + action + (skill ? ' / ' + toolLabel(skill) : '') + (tool ? ' / ' + toolLabel(tool) : '') + ' / ' + statusText(result.status) + reason;
 }
 function formatEvidence(item, index) {
   return (index + 1) + '. ' + (item.title || item.documentName || item.source || item.id || '证据片段');
@@ -2560,7 +3177,8 @@ function compactValue(value) {
     var obj = value;
     var parts = [];
     if (obj.status) parts.push('状态：' + statusText(obj.status));
-    if (obj.toolName || obj.tool) parts.push('能力：' + toolLabel(obj.toolName || obj.tool));
+    if (obj.businessSkillName || obj.business_skill_name || obj.businessSkillId || obj.business_skill_id) parts.push('能力：' + toolLabel(obj.businessSkillName || obj.business_skill_name || obj.businessSkillId || obj.business_skill_id));
+    else if (obj.toolName || obj.tool) parts.push('能力：' + toolLabel(obj.toolName || obj.tool));
     if (obj.errorType || obj.error_type) parts.push('原因：' + readableErrorType(obj.errorType || obj.error_type));
     if (obj.durationMs || obj.duration_ms) parts.push('耗时：' + formatElapsed(obj.durationMs || obj.duration_ms));
     if (obj.error) parts.push('异常：' + obj.error);
@@ -2644,6 +3262,44 @@ function formatElapsed(ms) {
 function scrollMessages() {
   var c = document.getElementById('messages');
   c.scrollTop = c.scrollHeight;
+}
+async function parseSSEStream(resp, handlers) {
+  if (!resp.ok) {
+    throw new Error('HTTP ' + resp.status);
+  }
+  var reader = resp.body.getReader();
+  var decoder = new TextDecoder('utf-8');
+  var buffer = '';
+  while (true) {
+    var chunk = await reader.read();
+    if (chunk.done) break;
+    buffer += decoder.decode(chunk.value, {stream: true});
+    var parts = buffer.split(/\r?\n\r?\n/);
+    buffer = parts.pop() || '';
+    parts.forEach(function(block) { dispatchSSEBlock(block, handlers); });
+  }
+  if (buffer.trim()) dispatchSSEBlock(buffer, handlers);
+}
+function dispatchSSEBlock(block, handlers) {
+  var eventName = 'message';
+  var dataLines = [];
+  block.split(/\r?\n/).forEach(function(line) {
+    if (line.startsWith('event:')) {
+      eventName = line.slice(6).trim();
+    } else if (line.startsWith('data:')) {
+      dataLines.push(line.slice(5).replace(/^ /, ''));
+    }
+  });
+  var data = dataLines.join('\n');
+  if (eventName === 'done') {
+    if (handlers.done) handlers.done(data);
+    return;
+  }
+  if (eventName === 'step') {
+    try { data = JSON.parse(data); } catch (e) { /* keep raw data */ }
+  }
+  var handler = handlers[eventName] || handlers.message;
+  if (handler) handler(data);
 }
 async function sendMessage() {
   var input = document.getElementById('questionInput');
@@ -2933,6 +3589,9 @@ document.getElementById('questionInput').addEventListener('input', function() {
 
 renderQuickPrompts();
 loadOverview();
+loadEnterpriseOverview();
+loadWorkflows();
+loadSkills();
 loadGraph();
 loadHistory();
 loadDocuments();

@@ -31,6 +31,10 @@ logs/
 # Upload directory
 uploads/
 
+# Runtime editable workflow assets
+data/workflows/user-workflows.json
+grid-ops-agent-app/data/workflows/user-workflows.json
+
 # Spring Boot DevTools
 .spring-boot-devtools.properties
 

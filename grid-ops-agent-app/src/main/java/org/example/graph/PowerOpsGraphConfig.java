@@ -56,7 +56,7 @@ import org.example.rag.KnowledgeGraphService;
 import org.example.rag.RerankService;
 import org.example.security.ApprovalService;
 import org.example.security.RbacService;
-import org.example.service.RagService;
+import org.example.workflow.WorkflowAssetService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -89,6 +89,7 @@ public class PowerOpsGraphConfig {
             RouterAgent routerAgent,
             SkillSelector skillSelector,
             KnowledgeOrganizationService knowledgeOrganizationService,
+            WorkflowAssetService workflowAssetService,
             MemoryService memoryService,
             HookEngine hookEngine,
             ToolAgent toolAgent,
@@ -119,7 +120,7 @@ public class PowerOpsGraphConfig {
                 .addNode("pre_check", node_async(observed("pre_check",
                         new PreCheckNode(inputValidator), observabilityService, checkpointService)))
                 .addNode("context_load", node_async(observed("context_load",
-                        new ContextLoadNode(memoryService, skillSelector, knowledgeOrganizationService, hookEngine), observabilityService, checkpointService)))
+                        new ContextLoadNode(memoryService, skillSelector, knowledgeOrganizationService, workflowAssetService, hookEngine), observabilityService, checkpointService)))
                 .addNode("router", node_async(observed("router",
                         new RouterNode(routerAgent), observabilityService, checkpointService)))
 
@@ -229,6 +230,7 @@ public class PowerOpsGraphConfig {
     public StateGraph alarmDiagnosisGraph(
             SkillSelector skillSelector,
             KnowledgeOrganizationService knowledgeOrganizationService,
+            WorkflowAssetService workflowAssetService,
             MemoryService memoryService,
             HookEngine hookEngine,
             DiagnosisAgent diagnosisAgent,
@@ -253,7 +255,7 @@ public class PowerOpsGraphConfig {
                 .addNode("pre_check", node_async(observed("pre_check",
                         new PreCheckNode(inputValidator), observabilityService, checkpointService)))
                 .addNode("context_load", node_async(observed("context_load",
-                        new ContextLoadNode(memoryService, skillSelector, knowledgeOrganizationService, hookEngine), observabilityService, checkpointService)))
+                        new ContextLoadNode(memoryService, skillSelector, knowledgeOrganizationService, workflowAssetService, hookEngine), observabilityService, checkpointService)))
                 .addNode("entity_extract", node_async(observed("entity_extract",
                         new EntityExtractNode(chatClient), observabilityService, checkpointService)))
                 .addNode("alarm_rag_retrieve", node_async(observed("alarm_rag_retrieve",

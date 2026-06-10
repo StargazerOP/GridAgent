@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,7 @@ public class ActionRecommendNode implements NodeAction {
         String riskLevel = state.value("risk_level").map(Object::toString).orElse("MEDIUM");
         String evidence = state.value("evidence").map(Object::toString).orElse("");
         String diagnosisResult = state.value("diagnosis_result").map(Object::toString).orElse("");
+        String workflowContext = state.value("workflow_context").map(Object::toString).orElse("");
         String input = state.value("cleaned_input").map(Object::toString)
                 .orElse(state.value("input").map(Object::toString).orElse(""));
         logger.info("ActionRecommendNode: 行动建议+结果汇总, riskLevel={}", riskLevel);
@@ -39,7 +41,9 @@ public class ActionRecommendNode implements NodeAction {
         List<Map<String, Object>> stepResults = readList(stepResultsObj);
         List<Map<String, Object>> planSteps = readList(state.value("plan_steps").orElse(List.of()));
 
-        if (!diagnosisResult.isEmpty()) {
+        if (!stepResults.isEmpty()) {
+            result.append(buildEvidenceDrivenReport(input, workflowContext, planSteps, stepResults, evidence, riskLevel, diagnosisResult));
+        } else if (!diagnosisResult.isEmpty()) {
             result.append(diagnosisResult);
         } else {
             result.append(generateFallbackResponse(input, planSteps, stepResults, evidence, riskLevel));
@@ -56,6 +60,85 @@ public class ActionRecommendNode implements NodeAction {
         }
 
         return Map.of("final_response", result.toString());
+    }
+
+    private String buildEvidenceDrivenReport(String input, String workflowContext, List<Map<String, Object>> planSteps,
+                                             List<Map<String, Object>> stepResults, String evidence,
+                                             String riskLevel, String diagnosisResult) {
+        List<Map<String, Object>> effectiveResults = distinctResults(stepResults);
+        String workflowName = workflowName(workflowContext);
+        List<String> completedSkills = effectiveResults.stream()
+                .filter(step -> "COMPLETED".equalsIgnoreCase(String.valueOf(step.get("status"))))
+                .map(this::skillOrToolName)
+                .filter(name -> !name.isBlank())
+                .distinct()
+                .limit(8)
+                .toList();
+        List<String> failedItems = effectiveResults.stream()
+                .filter(step -> "FAILED".equalsIgnoreCase(String.valueOf(step.get("status"))))
+                .map(step -> skillOrToolName(step) + "：" + readableErrorType(step))
+                .filter(item -> !item.isBlank())
+                .distinct()
+                .limit(5)
+                .toList();
+        Map<String, Object> mechanism = findResultByMode(effectiveResults, "SEMI_REAL_RULE_MECHANISM_CHECK");
+        Map<String, Object> riskCheck = findResultByMode(effectiveResults, "SEMI_REAL_RULE_RISK_CHECK");
+        Map<String, Object> status = findResultByTool(effectiveResults, "getDeviceStatus");
+        Map<String, Object> alarms = findResultByTool(effectiveResults, "getAlarmHistory");
+        Map<String, Object> tickets = findResultByTool(effectiveResults, "getDefectTickets");
+
+        StringBuilder text = new StringBuilder();
+        text.append("### 任务摘要\n");
+        text.append("- 输入任务：").append(truncate(input, 120)).append("\n");
+        if (!workflowName.isBlank()) {
+            text.append("- 命中流程：").append(workflowName).append("\n");
+        }
+        text.append("- 风险等级：").append(riskLevel).append("\n\n");
+
+        text.append("### Workflow 与 Skill 执行\n");
+        if (!completedSkills.isEmpty()) {
+            text.append("- 已完成能力：").append(String.join("、", completedSkills)).append("\n");
+        }
+        text.append("- 执行步骤：").append(effectiveResults.size()).append(" 项工具/能力调用已记录到溯源轨迹\n");
+        if (!failedItems.isEmpty()) {
+            text.append("- 数据缺口：").append(String.join("；", failedItems)).append("\n");
+        }
+        text.append("\n");
+
+        text.append("### 关键证据\n");
+        appendEvidenceLine(text, "状态量", summarizeResultPayload(status));
+        appendEvidenceLine(text, "历史告警", summarizeResultPayload(alarms));
+        appendEvidenceLine(text, "缺陷工单", summarizeResultPayload(tickets));
+        appendEvidenceLine(text, "规则校核", summarizeResultPayload(mechanism.isEmpty() ? riskCheck : mechanism));
+        text.append("\n");
+
+        text.append("### 校核结论\n");
+        if (!mechanism.isEmpty()) {
+            Map<String, Object> parsed = parseResultMap(mechanism);
+            Object calculation = parsed.get("calculation");
+            text.append("- 主变油温规则校核结果：").append(String.valueOf(parsed.getOrDefault("risk_level", riskLevel))).append("。\n");
+            if (calculation instanceof Map<?, ?> calc) {
+                text.append("- 油温裕度：").append(mapValue(calc, "temperature_margin_celsius", "未知"))
+                        .append("℃；负荷率：").append(mapValue(calc, "load_rate_percent", "未知")).append("%。\n");
+            }
+            text.append("- 该结果基于演示状态量与规则阈值推演，用于诊断辅助，不代表真实在线控制结论。\n");
+        } else {
+            text.append("- 已基于当前可用证据形成风险判断，缺少机理校核项时需补充真实测点或在线计算结果。\n");
+        }
+        text.append("\n");
+
+        text.append("### 处置建议与人工确认项\n");
+        List<String> confirmations = humanConfirmationItems(mechanism.isEmpty() ? riskCheck : mechanism);
+        if (confirmations.isEmpty()) {
+            confirmations = List.of("核对实时测点和现场巡视结果", "确认历史告警、缺陷工单是否闭环", "涉及负荷调整或方式变更时由值班负责人复核");
+        }
+        for (String item : confirmations.stream().limit(4).toList()) {
+            text.append("- ").append(item).append("\n");
+        }
+        if (!diagnosisResult.isBlank() && text.length() < 1800) {
+            text.append("\n### 模型综合补充\n").append(truncate(diagnosisResult, 500)).append("\n");
+        }
+        return text.toString().trim();
     }
 
     private String generateFallbackResponse(String input, List<Map<String, Object>> planSteps, List<Map<String, Object>> stepResults,
@@ -152,6 +235,169 @@ public class ActionRecommendNode implements NodeAction {
             summary.append("部分图谱查询未命中实体，建议补充设备台账或图谱节点。");
         }
         return summary.toString();
+    }
+
+    private String workflowName(String workflowContext) {
+        if (workflowContext == null || workflowContext.isBlank()) {
+            return "";
+        }
+        try {
+            Map<String, Object> context = OBJECT_MAPPER.readValue(workflowContext, new TypeReference<>() {});
+            Object workflow = context.get("matched_workflow");
+            if (workflow instanceof Map<?, ?> map) {
+                Object name = map.get("name");
+                return name == null ? "" : String.valueOf(name);
+            }
+        } catch (Exception ignored) {
+            return "";
+        }
+        return "";
+    }
+
+    private String skillOrToolName(Map<String, Object> step) {
+        String skill = String.valueOf(step.getOrDefault("businessSkillName", step.getOrDefault("business_skill_name", ""))).trim();
+        if (!skill.isBlank() && !"null".equalsIgnoreCase(skill)) {
+            return skill;
+        }
+        String tool = String.valueOf(step.getOrDefault("toolName", step.getOrDefault("tool_name", step.getOrDefault("tool", "")))).trim();
+        return toolLabel(tool);
+    }
+
+    private String toolLabel(String tool) {
+        if (tool == null) {
+            return "";
+        }
+        return switch (tool) {
+            case "getDeviceProfile" -> "设备台账查询";
+            case "getDeviceStatus" -> "设备状态查询";
+            case "getAlarmHistory" -> "历史告警检索";
+            case "getDeviceLogs" -> "运行日志检索";
+            case "getDefectTickets" -> "缺陷工单查询";
+            case "searchSafetyRules" -> "安全规程检索";
+            case "queryInternalDocs" -> "规程案例检索";
+            case "queryKnowledgeGraph" -> "知识图谱查询";
+            case "analyzeTopology" -> "拓扑影响分析";
+            case "assessTransformerOilTempRisk" -> "主变油温规则校核";
+            case "checkOperationRisk" -> "运行风险校核";
+            case "calculatePowerFlowEstimate" -> "潮流/负载估算";
+            case "generateFaultScenario" -> "故障场景生成";
+            default -> tool;
+        };
+    }
+
+    private Object mapValue(Map<?, ?> map, String key, Object fallback) {
+        Object value = map.get(key);
+        return value == null ? fallback : value;
+    }
+
+    private Map<String, Object> findResultByTool(List<Map<String, Object>> stepResults, String toolName) {
+        return stepResults.stream()
+                .filter(step -> toolName.equals(String.valueOf(step.getOrDefault("toolName", step.getOrDefault("tool_name", "")))))
+                .findFirst()
+                .orElse(Map.of());
+    }
+
+    private Map<String, Object> findResultByMode(List<Map<String, Object>> stepResults, String mode) {
+        for (Map<String, Object> step : stepResults) {
+            Map<String, Object> parsed = parseResultMap(step);
+            if (mode.equals(String.valueOf(parsed.getOrDefault("mode", "")))) {
+                return step;
+            }
+        }
+        return Map.of();
+    }
+
+    private Map<String, Object> parseResultMap(Map<String, Object> step) {
+        Object result = step.get("result");
+        if (result instanceof Map<?, ?> map) {
+            Map<String, Object> converted = new LinkedHashMap<>();
+            map.forEach((key, value) -> converted.put(String.valueOf(key), value));
+            return converted;
+        }
+        if (result == null) {
+            return Map.of();
+        }
+        try {
+            return OBJECT_MAPPER.readValue(String.valueOf(result), new TypeReference<>() {});
+        } catch (Exception e) {
+            return Map.of("text", String.valueOf(result));
+        }
+    }
+
+    private String summarizeResultPayload(Map<String, Object> step) {
+        if (step == null || step.isEmpty()) {
+            return "";
+        }
+        if ("FAILED".equalsIgnoreCase(String.valueOf(step.get("status")))) {
+            return skillOrToolName(step) + "未完成，原因：" + readableErrorType(step);
+        }
+        Map<String, Object> parsed = parseResultMap(step);
+        if (parsed.isEmpty()) {
+            return truncate(String.valueOf(step.getOrDefault("result", "")), 140);
+        }
+        Object mode = parsed.get("mode");
+        if ("SEMI_REAL_RULE_MECHANISM_CHECK".equals(String.valueOf(mode))) {
+            Object calculation = parsed.get("calculation");
+            return "主变油温规则校核风险等级 " + parsed.getOrDefault("risk_level", "UNKNOWN")
+                    + (calculation instanceof Map<?, ?> calc
+                    ? "，油温裕度 " + mapValue(calc, "temperature_margin_celsius", "未知") + "℃，负荷率 " + mapValue(calc, "load_rate_percent", "未知") + "%"
+                    : "");
+        }
+        if ("SEMI_REAL_RULE_RISK_CHECK".equals(String.valueOf(mode))) {
+            return "运行风险校核等级 " + parsed.getOrDefault("risk_level", "UNKNOWN")
+                    + "，规则得分 " + parsed.getOrDefault("risk_score", "未知");
+        }
+        if (parsed.containsKey("oilTemperature") || parsed.containsKey("loadRate") || parsed.containsKey("coolerStatus")) {
+            return "油温 " + parsed.getOrDefault("oilTemperature", "未返回")
+                    + "，负荷率 " + parsed.getOrDefault("loadRate", "未返回")
+                    + "，冷却器 " + parsed.getOrDefault("coolerStatus", "未返回");
+        }
+        Object metrics = parsed.get("metrics");
+        if (metrics instanceof Map<?, ?> metricMap) {
+            return "油温 " + mapValue(metricMap, "oilTemperature", "未返回")
+                    + "，阈值 " + mapValue(metricMap, "oilTemperatureThreshold", "未返回")
+                    + "，负荷率 " + mapValue(metricMap, "loadRate", "未返回")
+                    + "，冷却器 " + mapValue(metricMap, "coolerStatus", "未返回");
+        }
+        if (parsed.containsKey("alarms")) {
+            Object alarms = parsed.get("alarms");
+            int count = alarms instanceof List<?> list ? list.size() : Number.class.isInstance(parsed.get("total")) ? ((Number) parsed.get("total")).intValue() : 0;
+            return "召回历史告警 " + count + " 条" + (parsed.get("analysis") == null ? "" : "，" + truncate(String.valueOf(parsed.get("analysis")), 80));
+        }
+        if (parsed.containsKey("tickets")) {
+            Object tickets = parsed.get("tickets");
+            int count = tickets instanceof List<?> list ? list.size() : Number.class.isInstance(parsed.get("total")) ? ((Number) parsed.get("total")).intValue() : 0;
+            return "召回缺陷工单 " + count + " 条" + (parsed.get("analysis") == null ? "" : "，" + truncate(String.valueOf(parsed.get("analysis")), 80));
+        }
+        if (parsed.containsKey("logs")) {
+            Object logs = parsed.get("logs");
+            int count = logs instanceof List<?> list ? list.size() : Number.class.isInstance(parsed.get("total")) ? ((Number) parsed.get("total")).intValue() : 0;
+            return "召回运行日志 " + count + " 条" + (parsed.get("analysis") == null ? "" : "，" + truncate(String.valueOf(parsed.get("analysis")), 80));
+        }
+        if (parsed.containsKey("rules")) {
+            Object rules = parsed.get("rules");
+            int count = rules instanceof List<?> list ? list.size() : 0;
+            return "召回安全规程 " + count + " 条";
+        }
+        if (parsed.get("text") != null) {
+            return truncate(String.valueOf(parsed.get("text")), 140);
+        }
+        return truncate(toJson(parsed), 140);
+    }
+
+    private void appendEvidenceLine(StringBuilder text, String label, String summary) {
+        if (summary != null && !summary.isBlank() && !"null".equalsIgnoreCase(summary)) {
+            text.append("- ").append(label).append("：").append(summary).append("\n");
+        }
+    }
+
+    private List<String> humanConfirmationItems(Map<String, Object> step) {
+        Map<String, Object> parsed = parseResultMap(step);
+        Object items = parsed.get("human_confirmation_items");
+        if (items instanceof List<?> list) {
+            return list.stream().map(String::valueOf).filter(item -> !item.isBlank()).toList();
+        }
+        return List.of();
     }
 
     private List<Map<String, Object>> distinctResults(List<Map<String, Object>> stepResults) {

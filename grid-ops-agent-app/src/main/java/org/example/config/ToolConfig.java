@@ -163,6 +163,10 @@ public class ToolConfig {
                 "Run a mock operation-risk check from templates, graph context and engineering rules", null, null,
                 List.of("risk", "operation", "mock"), "QUERY", "MEDIUM", "GRIDOPS");
 
+        toolRegistryService.registerTool("assessTransformerOilTempRisk", "assessTransformerOilTempRisk",
+                "基于演示状态量与规则阈值校核主变油温、负载率和冷却裕度风险", null, null,
+                List.of("transformer", "oil-temperature", "mechanism-check", "risk"), "QUERY", "MEDIUM", "GRIDOPS");
+
         toolRegistryService.registerTool("generateFaultScenario", "generateFaultScenario",
                 "Generate mock fault scenarios and handling focus points", null, null,
                 List.of("fault", "scenario", "mock"), "QUERY", "MEDIUM", "GRIDOPS");

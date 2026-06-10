@@ -72,10 +72,13 @@ class KnowledgeOrganizationServiceTest {
 
         JsonNode powerFlow = objectMapper.readTree(tools.calculatePowerFlowEstimate("TR-110KV-001", "负荷转供", ""));
         JsonNode risk = objectMapper.readTree(tools.checkOperationRisk("N-1", "TR-110KV-001", "检修方式"));
+        JsonNode oilRisk = objectMapper.readTree(tools.assessTransformerOilTempRisk("TR-110KV-001", "86C", "80C"));
         JsonNode graph = objectMapper.readTree(tools.queryKnowledgeGraph("负荷转供", "", 5));
 
         assertThat(powerFlow.get("mode").asText()).isEqualTo("SEMI_REAL_RULE_ESTIMATE");
         assertThat(risk.get("mode").asText()).isEqualTo("SEMI_REAL_RULE_RISK_CHECK");
+        assertThat(oilRisk.get("mode").asText()).isEqualTo("SEMI_REAL_RULE_MECHANISM_CHECK");
+        assertThat(oilRisk.get("human_confirmation_items").isArray()).isTrue();
         assertThat(graph.get("nodes").isArray()).isTrue();
     }
 
